@@ -22,7 +22,7 @@ var routes = Routes{
 		"Index",
 		"GET",
 		"/",
-		alice.New().ThenFunc(handling.IndexHandler),
+		alice.New(handling.LogHandler).ThenFunc(handling.IndexHandler),
 	},
 }
 
