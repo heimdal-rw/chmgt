@@ -3,15 +3,22 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/mattjw79/chmgt/routing"
 )
 
 func main() {
 	router := routing.NewRouter()
-	// Let the user know that we're starting and on what
-	// port we're listening
+	// Let the user know that we're starting
 	log.Println("Starting server")
-	log.Println("Listening on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	srv := &http.Server{
+		Handler:      router,
+		Addr:         ":8080",
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	// Let the user know where the server is running
+	log.Printf("Listening on %v\n", srv.Addr)
+	log.Fatal(srv.ListenAndServe())
 }
