@@ -35,15 +35,15 @@ func LogHandler(next http.Handler) http.Handler {
 		defer func() {
 			log.Printf(
 				"%v %v %v %v %v %v",
-				time.Since(requestStart),
 				r.Host,
 				r.Method,
 				r.URL.EscapedPath(),
 				wrw.statusCode,
 				r.Proto,
+				time.Since(requestStart),
 			)
 		}()
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(wrw, r)
 	}
 	return http.HandlerFunc(h)
 }

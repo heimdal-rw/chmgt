@@ -35,5 +35,6 @@ func NewRouter() *mux.Router {
 			Name(route.Name).
 			Handler(route.Handler)
 	}
+	router.NotFoundHandler = alice.New(handling.LogHandler).ThenFunc(handling.NotFoundHandler)
 	return router
 }
