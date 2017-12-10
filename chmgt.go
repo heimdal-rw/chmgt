@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	router := routing.NewRouter()
 	// Let the user know that we're starting
 	log.Println("Starting server")
+	router := routing.NewRouter()
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         ":8080",
