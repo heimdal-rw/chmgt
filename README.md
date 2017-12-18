@@ -18,3 +18,8 @@ Easy change management software for the masses.
     -   Allow a single change request to be broken into multiple tasks
     -   Each task can be assigned to a different person
     -   Indicator for the number of tasks completed out of total (possible percentage as well)
+-   Plugins to allow the change management tool make the changes for you
+    -   GitLab API to view and accept changes
+    -   Ansible AWX API to activate the changes
+    -   A scheduler tool to... ummm... schedule the changes
+    -   If the change doesn't end with a sucessful return code,          automatically revert the change and send a notification with the logs
