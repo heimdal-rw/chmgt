@@ -1,5 +1,7 @@
 CREATE TABLE users (
   id INT NOT NULL,
+  username TEXT,
+  password TEXT,
   firstname TEXT,
   lastname TEXT,
   email TEXT,
@@ -8,14 +10,14 @@ CREATE TABLE users (
 
 CREATE TABLE changeRequest (
   id INT NOT NULL,
-  title VARCHAR(100) NOT NULL,
+  title TEXT NOT NULL,
   authorId INT NOT NULL,
   requesterId INT NOT NULL,
-  description VARCHAR(255) NULL,
-  reason VARCHAR(255) NULL,
-  risk VARCHAR(45) NULL,
-  steps LONGTEXT NULL,
-  revert LONGTEXT NULL,
+  description TEXT NULL,
+  reason TEXT NULL,
+  risk TEXT NULL,
+  steps TEXT NULL,
+  revert TEXT NULL,
   PRIMARY KEY (id),
   FOREIGN KEY (authorId) REFERENCES users(id),
   FOREIGN KEY (requesterId) REFERENCES users(id)
@@ -36,4 +38,5 @@ CREATE TABLE configuration (
   key TEXT,
   value TEXT,
   PRIMARY KEY (id)
-)
+);
+
