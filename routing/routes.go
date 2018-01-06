@@ -3,9 +3,10 @@ package routing
 import (
 	"net/http"
 
+	"chmgt/handling"
+
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
-	"github.com/mattjw79/chmgt/handling"
 )
 
 // Route provides all of the items needed to build a route
