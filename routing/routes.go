@@ -33,6 +33,18 @@ var routes = Routes{
 		"/api/changes",
 		alice.New(handling.LogHandler).ThenFunc(handling.GetChangesHandler),
 	},
+	Route{
+		"GetChange",
+		"GET",
+		"/api/changes/{id}",
+		alice.New(handling.LogHandler).ThenFunc(handling.GetChangesHandler),
+	},
+	Route{
+		"CreateChange",
+		"POST",
+		"/api/changes",
+		alice.New(handling.LogHandler).ThenFunc(handling.CreateChangeHandler),
+	},
 }
 
 // NewRouter builds the routing structure
