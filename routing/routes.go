@@ -22,10 +22,28 @@ type Routes []Route
 
 var routes = Routes{
 	Route{
-		"Index",
+		"API",
 		"GET",
 		"/api",
 		alice.New(handling.LogHandler).ThenFunc(handling.APIHandler),
+	},
+	Route{
+		"GetChanges",
+		"GET",
+		"/api/changes",
+		alice.New(handling.LogHandler).ThenFunc(handling.GetChangesHandler),
+	},
+	Route{
+		"GetChange",
+		"GET",
+		"/api/changes/{id}",
+		alice.New(handling.LogHandler).ThenFunc(handling.GetChangesHandler),
+	},
+	Route{
+		"CreateChange",
+		"POST",
+		"/api/changes",
+		alice.New(handling.LogHandler).ThenFunc(handling.CreateChangeHandler),
 	},
 }
 

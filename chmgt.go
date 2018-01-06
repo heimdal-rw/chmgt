@@ -1,19 +1,56 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"chmgt/routing"
+  
+	_ "github.com/mattn/go-sqlite3"
 )
+
+func createDatabase(dbFile string) error {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// Read in the SQL for creating the database
+	buf, err := ioutil.ReadFile("./sql/sqlite.sql")
+	if err != nil {
+		return err
+	}
+	sqlQuery := string(buf)
+
+	// Create the schema in the database
+	_, err = db.Exec(sqlQuery)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func main() {
 	// Pull in config
 	config := ReadConfig()
 	log.Printf("config:\n%+v\n", config)
 
+	// Create the database if it doesn't exist
+	dbFile := "./chmgt.db"
+	if _, err := os.Stat(dbFile); err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("Creating database: %v", dbFile)
+			createDatabase(dbFile)
+		}
+	}
+  
 	// Let the user know tt we're starting
 	log.Println("Starting server")
 	router := routing.NewRouter()
