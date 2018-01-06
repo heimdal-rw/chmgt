@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"chmgt/routing"
-
+  
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -50,7 +50,7 @@ func main() {
 			createDatabase(dbFile)
 		}
 	}
-
+  
 	// Let the user know tt we're starting
 	log.Println("Starting server")
 	router := routing.NewRouter()
