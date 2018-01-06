@@ -1,20 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/mattjw79/chmgt/routing"
+	"chmgt/routing"
 )
 
 func main() {
-	// Let the user know that we're starting
+	// Pull in config
+	config := ReadConfig()
+	log.Printf("config:\n%+v\n", config)
+
+	// Let the user know tt we're starting
 	log.Println("Starting server")
 	router := routing.NewRouter()
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         ":8080",
+		Addr:         fmt.Sprintf("%s:%s", config.Interface, config.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
