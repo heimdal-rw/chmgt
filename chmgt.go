@@ -64,7 +64,7 @@ func main() {
 	router := routing.NewRouter()
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         fmt.Sprintf("%s:%s", config.Interface, config.Port),
+		Addr:         fmt.Sprint(config.ServerListen),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

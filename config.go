@@ -11,17 +11,17 @@ import (
 
 // Config is a struct of expected configuration elements
 type Config struct {
-	Interface string
-	Port      string
+	ServerListen string
 }
 
 // ReadConfig takes the configfile string and attempts to open it and parse toml
 // if the commandline flag for config file does not exist, it tries a few other locations
 func ReadConfig(configfile string) Config {
 	usr, _ := user.Current() // may need to add error handling for this
+	dirconfig := "./config"
 	userconfig := fmt.Sprintf("%s/.chmgt/config", usr.HomeDir)
 	etcconfig := "/etc/chmgt/config"
-	configfiles := [4]string{configfile, "./config", userconfig, etcconfig}
+	configfiles := [4]string{configfile, dirconfig, userconfig, etcconfig}
 
 	isfound := false
 	for _, item := range configfiles {

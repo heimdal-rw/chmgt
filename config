@@ -1,2 +1,1 @@
-interface = "localhost"
-port = "8080"
+serverListen = "localhost:8080"
