@@ -1,9 +1,10 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"log"
 	"os"
+	"os/user"
 
 	"github.com/BurntSushi/toml"
 )
@@ -14,17 +15,28 @@ type Config struct {
 	Port      string
 }
 
-// ReadConfig can accept a runtime flag of --config with a filename or default to ./config.
-// This should probably be changed to somewhere in /etc once we package up chmgt for use.
-func ReadConfig() Config {
-	var configfile string
-	flag.StringVar(&configfile, "config", "./config", "Config file to be used")
-	flag.Parse()
-	log.Printf("Attempting to use config file: %s", configfile)
+// ReadConfig takes the configfile string and attempts to open it and parse toml
+// if the commandline flag for config file does not exist, it tries a few other locations
+func ReadConfig(configfile string) Config {
+	usr, _ := user.Current() // may need to add error handling for this
+	userconfig := fmt.Sprintf("%s/.chmgt/config", usr.HomeDir)
+	etcconfig := "/etc/chmgt/config"
+	configfiles := [4]string{configfile, "./config", userconfig, etcconfig}
 
-	_, err := os.Stat(configfile)
-	if err != nil {
-		log.Fatal("Config file is missing: ", configfile)
+	isfound := false
+	for _, item := range configfiles {
+		log.Printf("Attempting to use config file: %s", item)
+		if _, err := os.Stat(item); err != nil {
+			log.Print("Config file not found.")
+			continue
+		}
+		isfound = true
+		configfile = item
+		break
+	}
+
+	if isfound == false {
+		log.Fatal("No config files found. Exiting.")
 	}
 
 	var config Config
