@@ -18,10 +18,13 @@ type Config struct {
 // if the commandline flag for config file does not exist, it tries a few other locations
 func ReadConfig(configfile string) Config {
 	usr, _ := user.Current() // may need to add error handling for this
-	dirconfig := "./config"
-	userconfig := fmt.Sprintf("%s/.chmgt/config", usr.HomeDir)
-	etcconfig := "/etc/chmgt/config"
-	configfiles := [4]string{configfile, dirconfig, userconfig, etcconfig}
+	// define paths of where we might find the config file
+	configfiles := [4]string{
+		configfile,
+		"./config",
+		fmt.Sprintf("%s/.chmgt/config", usr.HomeDir),
+		"/etc/chmgt/config",
+	}
 
 	isfound := false
 	for _, item := range configfiles {
