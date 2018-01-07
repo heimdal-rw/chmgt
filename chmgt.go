@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,7 +11,7 @@ import (
 	"time"
 
 	"chmgt/routing"
-  
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -38,8 +39,15 @@ func createDatabase(dbFile string) error {
 }
 
 func main() {
+	// Grabbing command line flags
+	var (
+		configFileFlag string //config file to use
+	)
+	flag.StringVar(&configFileFlag, "config", "./config", "Config file path to be used.")
+	flag.Parse()
+
 	// Pull in config
-	config := ReadConfig()
+	config := ReadConfig(configFileFlag)
 	log.Printf("config:\n%+v\n", config)
 
 	// Create the database if it doesn't exist
@@ -50,13 +58,13 @@ func main() {
 			createDatabase(dbFile)
 		}
 	}
-  
+
 	// Let the user know tt we're starting
 	log.Println("Starting server")
 	router := routing.NewRouter()
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         fmt.Sprintf("%s:%s", config.Interface, config.Port),
+		Addr:         fmt.Sprint(config.ServerListen),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
