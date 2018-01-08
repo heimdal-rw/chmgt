@@ -43,11 +43,14 @@ func main() {
 	var (
 		configFileFlag string //config file to use
 	)
-	flag.StringVar(&configFileFlag, "config", "./config", "Config file path to be used.")
+	flag.StringVar(&configFileFlag, "config", "", "Config file path to be used.")
 	flag.Parse()
 
 	// Pull in config
-	config := ReadConfig(configFileFlag)
+	config, err := ReadConfig(configFileFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Printf("config:\n%+v\n", config)
 
 	// Create the database if it doesn't exist
@@ -59,7 +62,7 @@ func main() {
 		}
 	}
 
-	// Let the user know tt we're starting
+	// Let the user know that we're starting
 	log.Println("Starting server")
 	router := routing.NewRouter()
 	srv := &http.Server{
