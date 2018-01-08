@@ -45,6 +45,18 @@ var routes = Routes{
 		"/api/changes",
 		alice.New(handling.LogHandler).ThenFunc(handling.CreateChangeHandler),
 	},
+	Route{
+		"DeleteChange",
+		"DELETE",
+		"/api/changes/{id}",
+		alice.New(handling.LogHandler).ThenFunc(handling.DeleteChangeHandler),
+	},
+	Route{
+		"UpdateChange",
+		"PUT",
+		"/api/changes/{id}",
+		alice.New(handling.LogHandler).ThenFunc(handling.UpdateChangeHandler),
+	},
 }
 
 // NewRouter builds the routing structure

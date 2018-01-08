@@ -137,11 +137,6 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	// stmt, err := db.Prepare(sqlQuery)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	// defer stmt.Close()
 	res, err := db.Exec(
 		sqlQuery,
 		cr.Title,
@@ -166,4 +161,86 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonOut.Encode(insertedID)
+}
+
+// DeleteChangeHandler deletes the specified change request
+func DeleteChangeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	dbFile := "./chmgt.db"
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer db.Close()
+
+	sqlQuery := "DELETE FROM changeRequest WHERE _rowid_=?"
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	_, err = db.Exec(sqlQuery, id)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+}
+
+// UpdateChangeHandler updates the specified change request
+func UpdateChangeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var cr changeRequest
+
+	err := json.NewDecoder(r.Body).Decode(&cr)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	cr.ID = id
+
+	dbFile := "./chmgt.db"
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer db.Close()
+
+	sqlQuery := `
+	UPDATE changeRequest SET
+		title=?,
+		authorId=?,
+		requesterId=?,
+		description=?,
+		reason=?,
+		risk=?,
+		steps=?,
+		revert=?
+	WHERE _rowid_=?
+	`
+
+	_, err = db.Exec(
+		sqlQuery,
+		cr.Title,
+		cr.AuthorID,
+		cr.RequesterID,
+		cr.Description,
+		cr.Reason,
+		cr.Risk,
+		cr.Steps,
+		cr.Revert,
+		cr.ID,
+	)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
