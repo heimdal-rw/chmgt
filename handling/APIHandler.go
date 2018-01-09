@@ -90,35 +90,8 @@ func GetChangesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// rows, err := db.Query(sqlQuery)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return
-	// }
-	// defer rows.Close()
-
 	jsonOut := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	// var crs changeRequests
-	// for rows.Next() {
-	// 	var cr changeRequest
-	// 	err = rows.Scan(
-	// 		&cr.ID,
-	// 		&cr.Title,
-	// 		&cr.AuthorID,
-	// 		&cr.RequesterID,
-	// 		&cr.Description,
-	// 		&cr.Reason,
-	// 		&cr.Risk,
-	// 		&cr.Steps,
-	// 		&cr.Revert,
-	// 	)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	} else {
-	// 		crs = append(crs, cr)
-	// 	}
-	// }
 	jsonOut.Encode(crs)
 }
 
