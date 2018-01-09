@@ -3,10 +3,11 @@ package handling
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+
+	"chmgt/models"
 
 	"github.com/gorilla/mux"
 	// Bring in the SQLite3 functionality
@@ -64,51 +65,66 @@ func GetChangesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	sqlQuery := "SELECT _rowid_, title, authorId, requesterId, description, reason, risk, steps, revert FROM changeRequest"
+	var crs []models.ChangeRequest
+	// sqlQuery := "SELECT _rowid_, title, authorId, requesterId, description, reason, risk, steps, revert FROM changeRequest"
 	if vars["id"] != "" {
 		id, err := strconv.Atoi(vars["id"])
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		sqlQuery = fmt.Sprintf("%s WHERE _rowid_=%d", sqlQuery, id)
+		// sqlQuery = fmt.Sprintf("%s WHERE _rowid_=%d", sqlQuery, id)
+		var cr models.ChangeRequest
+		cr.ID = id
+		err = cr.GetChange(db)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		crs = append(crs, cr)
+	} else {
+		crs, err = models.GetChangeRequests(db)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
 
-	rows, err := db.Query(sqlQuery)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer rows.Close()
+	// rows, err := db.Query(sqlQuery)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	// defer rows.Close()
 
 	jsonOut := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	var crs changeRequests
-	for rows.Next() {
-		var cr changeRequest
-		err = rows.Scan(
-			&cr.ID,
-			&cr.Title,
-			&cr.AuthorID,
-			&cr.RequesterID,
-			&cr.Description,
-			&cr.Reason,
-			&cr.Risk,
-			&cr.Steps,
-			&cr.Revert,
-		)
-		if err != nil {
-			log.Println(err)
-		} else {
-			crs = append(crs, cr)
-		}
-	}
+	// var crs changeRequests
+	// for rows.Next() {
+	// 	var cr changeRequest
+	// 	err = rows.Scan(
+	// 		&cr.ID,
+	// 		&cr.Title,
+	// 		&cr.AuthorID,
+	// 		&cr.RequesterID,
+	// 		&cr.Description,
+	// 		&cr.Reason,
+	// 		&cr.Risk,
+	// 		&cr.Steps,
+	// 		&cr.Revert,
+	// 	)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	} else {
+	// 		crs = append(crs, cr)
+	// 	}
+	// }
 	jsonOut.Encode(crs)
 }
 
 // CreateChangeHandler creates a new change in the database
 func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
-	var cr changeRequest
+	var cr models.ChangeRequest
 
 	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
@@ -124,30 +140,7 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	sqlQuery := `
-	INSERT INTO changeRequest (
-		title,
-		authorId,
-		requesterId,
-		description,
-		reason,
-		risk,
-		steps,
-		revert
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
-	res, err := db.Exec(
-		sqlQuery,
-		cr.Title,
-		cr.AuthorID,
-		cr.RequesterID,
-		cr.Description,
-		cr.Reason,
-		cr.Risk,
-		cr.Steps,
-		cr.Revert,
-	)
+	err = cr.CreateChange(db)
 	if err != nil {
 		log.Println(err)
 		return
@@ -155,12 +148,7 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonOut := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	insertedID, err := res.LastInsertId()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	jsonOut.Encode(insertedID)
+	jsonOut.Encode(cr.ID)
 }
 
 // DeleteChangeHandler deletes the specified change request
