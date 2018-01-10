@@ -1,6 +1,13 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+	"io/ioutil"
+	"os"
+
+	// Bring in the SQLite3 functionality
+	_ "github.com/mattn/go-sqlite3"
+)
 
 type ChangeRequest struct {
 	ID          int    `json:"id"`
@@ -12,6 +19,47 @@ type ChangeRequest struct {
 	Risk        string `json:"risk"`
 	Steps       string `json:"steps"`
 	Revert      string `json:"revert"`
+}
+
+var DBConnection string = "./chmgt.db"
+
+func Open(dbFile string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func Exists(dbFile string) error {
+	if _, err := os.Stat(dbFile); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenerateDatabase(sqlFile, dbFile string) error {
+	db, err := Open(DBConnection)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// Read in the SQL for creating the database
+	buf, err := ioutil.ReadFile(sqlFile)
+	if err != nil {
+		return err
+	}
+	sqlQuery := string(buf)
+
+	// Create the schema in the database
+	_, err = db.Exec(sqlQuery)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetChangeRequests(db *sql.DB) ([]ChangeRequest, error) {
@@ -128,5 +176,49 @@ func (cr *ChangeRequest) CreateChange(db *sql.DB) error {
 		return err
 	}
 	cr.ID = int(insertedID)
+	return nil
+}
+
+func (cr *ChangeRequest) DeleteChange(db *sql.DB) error {
+	sqlQuery := "DELETE FROM changeRequest WHERE _rowid_=?"
+
+	_, err := db.Exec(sqlQuery, cr.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cr *ChangeRequest) UpdateChange(db *sql.DB) error {
+	sqlQuery := `
+	UPDATE changeRequest SET
+		title=?,
+		authorId=?,
+		requesterId=?,
+		description=?,
+		reason=?,
+		risk=?,
+		steps=?,
+		revert=?
+	WHERE _rowid_=?
+	`
+
+	_, err := db.Exec(
+		sqlQuery,
+		cr.Title,
+		cr.AuthorID,
+		cr.RequesterID,
+		cr.Description,
+		cr.Reason,
+		cr.Risk,
+		cr.Steps,
+		cr.Revert,
+		cr.ID,
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -1,42 +1,15 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
+	"chmgt/models"
 	"chmgt/routing"
-
-	_ "github.com/mattn/go-sqlite3"
 )
-
-func createDatabase(dbFile string) error {
-	db, err := sql.Open("sqlite3", dbFile)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	// Read in the SQL for creating the database
-	buf, err := ioutil.ReadFile("./sql/sqlite.sql")
-	if err != nil {
-		return err
-	}
-	sqlQuery := string(buf)
-
-	// Create the schema in the database
-	_, err = db.Exec(sqlQuery)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func main() {
 	// Grabbing command line flags
@@ -51,12 +24,9 @@ func main() {
 	log.Printf("config:\n%+v\n", config)
 
 	// Create the database if it doesn't exist
-	dbFile := "./chmgt.db"
-	if _, err := os.Stat(dbFile); err != nil {
-		if os.IsNotExist(err) {
-			log.Printf("Creating database: %v", dbFile)
-			createDatabase(dbFile)
-		}
+	if err := models.Exists(models.DBConnection); err != nil {
+		log.Printf("Creating database: %v", models.DBConnection)
+		models.GenerateDatabase("./sql/sqlite.sql", models.DBConnection)
 	}
 
 	// Let the user know tt we're starting

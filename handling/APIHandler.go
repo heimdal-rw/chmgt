@@ -1,7 +1,6 @@
 package handling
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,23 +9,7 @@ import (
 	"chmgt/models"
 
 	"github.com/gorilla/mux"
-	// Bring in the SQLite3 functionality
-	_ "github.com/mattn/go-sqlite3"
 )
-
-type changeRequest struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	AuthorID    int    `json:"authorId"`
-	RequesterID int    `json:"requesterId"`
-	Description string `json:"description"`
-	Reason      string `json:"reason"`
-	Risk        string `json:"risk"`
-	Steps       string `json:"steps"`
-	Revert      string `json:"revert"`
-}
-
-type changeRequests []changeRequest
 
 type apiOption struct {
 	Method      string `json:"method"`
@@ -57,8 +40,7 @@ func APIHandler(w http.ResponseWriter, r *http.Request) {
 func GetChangesHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	dbFile := "./chmgt.db"
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := models.Open(models.DBConnection)
 	if err != nil {
 		log.Println(err)
 		return
@@ -105,8 +87,7 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbFile := "./chmgt.db"
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := models.Open(models.DBConnection)
 	if err != nil {
 		log.Println(err)
 		return
@@ -128,21 +109,22 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteChangeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	dbFile := "./chmgt.db"
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := models.Open(models.DBConnection)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	defer db.Close()
 
-	sqlQuery := "DELETE FROM changeRequest WHERE _rowid_=?"
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	_, err = db.Exec(sqlQuery, id)
+
+	var cr models.ChangeRequest
+	cr.ID = id
+	err = cr.DeleteChange(db)
 	if err != nil {
 		log.Println(err)
 		return
@@ -152,7 +134,7 @@ func DeleteChangeHandler(w http.ResponseWriter, r *http.Request) {
 // UpdateChangeHandler updates the specified change request
 func UpdateChangeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	var cr changeRequest
+	var cr models.ChangeRequest
 
 	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
@@ -167,39 +149,14 @@ func UpdateChangeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	cr.ID = id
 
-	dbFile := "./chmgt.db"
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := models.Open(models.DBConnection)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	defer db.Close()
 
-	sqlQuery := `
-	UPDATE changeRequest SET
-		title=?,
-		authorId=?,
-		requesterId=?,
-		description=?,
-		reason=?,
-		risk=?,
-		steps=?,
-		revert=?
-	WHERE _rowid_=?
-	`
-
-	_, err = db.Exec(
-		sqlQuery,
-		cr.Title,
-		cr.AuthorID,
-		cr.RequesterID,
-		cr.Description,
-		cr.Reason,
-		cr.Risk,
-		cr.Steps,
-		cr.Revert,
-		cr.ID,
-	)
+	err = cr.UpdateChange(db)
 	if err != nil {
 		log.Println(err)
 		return
