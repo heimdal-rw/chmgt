@@ -2,13 +2,12 @@ package models
 
 import (
 	"database/sql"
-	"io/ioutil"
-	"os"
 
 	// Bring in the SQLite3 functionality
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// ChangeRequest provides the change request definition
 type ChangeRequest struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
@@ -21,47 +20,7 @@ type ChangeRequest struct {
 	Revert      string `json:"revert"`
 }
 
-var DBConnection string = "./chmgt.db"
-
-func Open(dbFile string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbFile)
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
-func Exists(dbFile string) error {
-	if _, err := os.Stat(dbFile); err != nil {
-		return err
-	}
-	return nil
-}
-
-func GenerateDatabase(sqlFile, dbFile string) error {
-	db, err := Open(DBConnection)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	// Read in the SQL for creating the database
-	buf, err := ioutil.ReadFile(sqlFile)
-	if err != nil {
-		return err
-	}
-	sqlQuery := string(buf)
-
-	// Create the schema in the database
-	_, err = db.Exec(sqlQuery)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
+// GetChangeRequests returns all change requests
 func GetChangeRequests(db *sql.DB) ([]ChangeRequest, error) {
 	sqlQuery := `
 	SELECT
@@ -105,6 +64,7 @@ func GetChangeRequests(db *sql.DB) ([]ChangeRequest, error) {
 	return changeRequests, nil
 }
 
+// GetChange gets the change request
 func (cr *ChangeRequest) GetChange(db *sql.DB) error {
 	sqlQuery := `
 	SELECT
@@ -143,6 +103,7 @@ func (cr *ChangeRequest) GetChange(db *sql.DB) error {
 	return nil
 }
 
+// CreateChange creates a change request
 func (cr *ChangeRequest) CreateChange(db *sql.DB) error {
 	sqlQuery := `
 	INSERT INTO changeRequest (
@@ -179,6 +140,7 @@ func (cr *ChangeRequest) CreateChange(db *sql.DB) error {
 	return nil
 }
 
+// DeleteChange deletes a change request
 func (cr *ChangeRequest) DeleteChange(db *sql.DB) error {
 	sqlQuery := "DELETE FROM changeRequest WHERE _rowid_=?"
 
@@ -190,6 +152,7 @@ func (cr *ChangeRequest) DeleteChange(db *sql.DB) error {
 	return nil
 }
 
+// UpdateChange updates a change request
 func (cr *ChangeRequest) UpdateChange(db *sql.DB) error {
 	sqlQuery := `
 	UPDATE changeRequest SET
