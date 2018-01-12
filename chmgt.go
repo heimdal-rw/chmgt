@@ -27,6 +27,10 @@ func main() {
 	log.Printf("config:\n%+v\n", config)
 
 	// Create the database if it doesn't exist
+	if config.Database != "" {
+		// Overwrite default if config specifies db file
+		models.DBConnection = config.Database
+	}
 	if err := models.Exists(models.DBConnection); err != nil {
 		log.Printf("Creating database: %v", models.DBConnection)
 		models.GenerateDatabase("./sql/sqlite.sql", models.DBConnection)
