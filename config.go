@@ -13,6 +13,7 @@ import (
 // Config is a struct of expected configuration elements
 type Config struct {
 	ServerListen string
+	Database     string
 }
 
 // ReadConfig takes the configfile string and attempts to open it and parse toml

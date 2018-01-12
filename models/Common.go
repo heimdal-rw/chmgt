@@ -32,7 +32,7 @@ func Exists(dbFile string) error {
 
 // GenerateDatabase reads in a sql file to create the database
 func GenerateDatabase(sqlFile, dbFile string) error {
-	db, err := Open(DBConnection)
+	db, err := Open(dbFile)
 	if err != nil {
 		return err
 	}
