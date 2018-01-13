@@ -1,8 +1,6 @@
 package models
 
 import (
-	"database/sql"
-
 	// Bring in the SQLite3 functionality
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -17,7 +15,7 @@ type User struct {
 }
 
 // GetUsers returns all users
-func GetUsers(db *sql.DB) ([]User, error) {
+func (db *DB) GetUsers() ([]*User, error) {
 	sqlQuery := `
 	SELECT
 		_rowid_,
@@ -33,9 +31,9 @@ func GetUsers(db *sql.DB) ([]User, error) {
 	}
 	defer rows.Close()
 
-	users := []User{}
+	users := make([]*User, 0)
 	for rows.Next() {
-		var user User
+		user := new(User)
 		err = rows.Scan(
 			&user.ID,
 			&user.Username,
@@ -53,7 +51,7 @@ func GetUsers(db *sql.DB) ([]User, error) {
 }
 
 // GetUser gets the user
-func (user *User) GetUser(db *sql.DB) error {
+func (db *DB) GetUser(id int) error {
 	sqlQuery := `
 	SELECT
 		_rowid_,
@@ -64,12 +62,13 @@ func (user *User) GetUser(db *sql.DB) error {
 	FROM users
 	WHERE _rowid_=?
 	`
-	rows, err := db.Query(sqlQuery, user.ID)
+	rows, err := db.Query(sqlQuery, id)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
+	user := new(User)
 	for rows.Next() {
 		err = rows.Scan(
 			&user.ID,
@@ -86,7 +85,7 @@ func (user *User) GetUser(db *sql.DB) error {
 }
 
 // CreateUser creates a user
-func (user *User) CreateUser(db *sql.DB) error {
+func (db *DB) CreateUser(user *User) error {
 	sqlQuery := `
 	INSERT INTO users (
 		username,
@@ -115,10 +114,10 @@ func (user *User) CreateUser(db *sql.DB) error {
 }
 
 // DeleteUser deletes a user
-func (user *User) DeleteUser(db *sql.DB) error {
+func (db *DB) DeleteUser(id int) error {
 	sqlQuery := "DELETE FROM users WHERE _rowid_=?"
 
-	_, err := db.Exec(sqlQuery, user.ID)
+	_, err := db.Exec(sqlQuery, id)
 	if err != nil {
 		return err
 	}
@@ -127,7 +126,7 @@ func (user *User) DeleteUser(db *sql.DB) error {
 }
 
 // UpdateUser updates a user
-func (user *User) UpdateUser(db *sql.DB) error {
+func (db *DB) UpdateUser(user *User) error {
 	sqlQuery := `
 	UPDATE users SET
 		username=?,
@@ -143,6 +142,7 @@ func (user *User) UpdateUser(db *sql.DB) error {
 		user.Firstname,
 		user.Lastname,
 		user.Email,
+		user.ID,
 	)
 	if err != nil {
 		return err

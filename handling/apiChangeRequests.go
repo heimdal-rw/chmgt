@@ -12,35 +12,26 @@ import (
 )
 
 // GetChangesHandler returns change requests
-func GetChangesHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Env) GetChangesHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
-
-	var crs []models.ChangeRequest
-	// sqlQuery := "SELECT _rowid_, title, authorId, requesterId, description, reason, risk, steps, revert FROM changeRequest"
+	crs := make([]*models.ChangeRequest, 0)
 	if vars["id"] != "" {
 		id, err := strconv.Atoi(vars["id"])
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		// sqlQuery = fmt.Sprintf("%s WHERE _rowid_=%d", sqlQuery, id)
-		var cr models.ChangeRequest
-		cr.ID = id
-		err = cr.GetChange(db)
+		cr := new(models.ChangeRequest)
+		cr, err = env.DB.GetChangeRequest(id)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		crs = append(crs, cr)
 	} else {
-		crs, err = models.GetChangeRequests(db)
+		var err error
+		crs, err = env.DB.GetChangeRequests()
 		if err != nil {
 			log.Println(err)
 			return
@@ -53,8 +44,8 @@ func GetChangesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateChangeHandler creates a new change in the database
-func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
-	var cr models.ChangeRequest
+func (env *Env) CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
+	cr := new(models.ChangeRequest)
 
 	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
@@ -62,14 +53,7 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
-
-	err = cr.CreateChange(db)
+	err = env.DB.CreateChangeRequest(cr)
 	if err != nil {
 		log.Println(err)
 		return
@@ -81,15 +65,8 @@ func CreateChangeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteChangeHandler deletes the specified change request
-func DeleteChangeHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Env) DeleteChangeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
 
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -97,9 +74,7 @@ func DeleteChangeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cr models.ChangeRequest
-	cr.ID = id
-	err = cr.DeleteChange(db)
+	err = env.DB.DeleteChangeRequest(id)
 	if err != nil {
 		log.Println(err)
 		return
@@ -107,9 +82,9 @@ func DeleteChangeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateChangeHandler updates the specified change request
-func UpdateChangeHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Env) UpdateChangeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	var cr models.ChangeRequest
+	cr := new(models.ChangeRequest)
 
 	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
@@ -124,14 +99,7 @@ func UpdateChangeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	cr.ID = id
 
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
-
-	err = cr.UpdateChange(db)
+	err = env.DB.UpdateChangeRequest(cr)
 	if err != nil {
 		log.Println(err)
 		return

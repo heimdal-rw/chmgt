@@ -9,8 +9,33 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// DBConnection provides a default connection string
-var DBConnection = "./chmgt.db"
+type Datastore interface {
+	GetChangeRequests() ([]*ChangeRequest, error)
+	GetChangeRequest(id int) (*ChangeRequest, error)
+	CreateChangeRequest(cr *ChangeRequest) error
+	DeleteChangeRequest(id int) error
+	UpdateChangeRequest(cr *ChangeRequest) error
+	GetUsers() ([]*User, error)
+	GetUser(id int) error
+	CreateUser(user *User) error
+	DeleteUser(id int) error
+	UpdateUser(user *User) error
+}
+
+type DB struct {
+	*sql.DB
+}
+
+func NewDB(dsn string) (*DB, error) {
+	db, err := sql.Open("sqlite3", dsn)
+	if err != nil {
+		return nil, err
+	}
+	return &DB{db}, nil
+}
+
+// DSN provides a default connection string
+var DSN = "./chmgt.db"
 
 // Open opens a connection to the database
 func Open(dbFile string) (*sql.DB, error) {
@@ -31,8 +56,8 @@ func Exists(dbFile string) error {
 }
 
 // GenerateDatabase reads in a sql file to create the database
-func GenerateDatabase(sqlFile, dbFile string) error {
-	db, err := Open(dbFile)
+func GenerateDatabase(sqlFile, dsn string) error {
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return err
 	}
