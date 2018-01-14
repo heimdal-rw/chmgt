@@ -27,7 +27,7 @@ var RouteDefs []Route
 
 // NewRouter builds the routing structure
 func NewRouter() *mux.Router {
-	db, err := models.NewDB("chmgt.db")
+	db, err := models.NewDB(models.DSN)
 	if err != nil {
 		log.Fatal(err)
 	}
