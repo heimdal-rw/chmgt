@@ -12,17 +12,10 @@ import (
 )
 
 // GetUsersHandler returns users
-func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Env) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
-
-	var users []models.User
+	users := make([]*models.User, 0)
 	if vars["id"] != "" {
 		id, err := strconv.Atoi(vars["id"])
 		if err != nil {
@@ -30,16 +23,17 @@ func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var user models.User
+		user := new(models.User)
 		user.ID = id
-		err = user.GetUser(db)
+		err = env.DB.GetUser(id)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		users = append(users, user)
 	} else {
-		users, err = models.GetUsers(db)
+		var err error
+		users, err = env.DB.GetUsers()
 		if err != nil {
 			log.Println(err)
 			return
@@ -52,8 +46,8 @@ func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateUserHandler creates a new user in the database
-func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	var user models.User
+func (env *Env) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+	user := new(models.User)
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -61,14 +55,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
-
-	err = user.CreateUser(db)
+	err = env.DB.CreateUser(user)
 	if err != nil {
 		log.Println(err)
 		return
@@ -80,15 +67,8 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteUserHandler deletes the specified change request
-func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Env) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
 
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -96,9 +76,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
-	user.ID = id
-	err = user.DeleteUser(db)
+	err = env.DB.DeleteUser(id)
 	if err != nil {
 		log.Println(err)
 		return
@@ -106,9 +84,9 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateUserHandler updates the specified change request
-func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Env) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	var user models.User
+	user := new(models.User)
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -123,14 +101,7 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	user.ID = id
 
-	db, err := models.Open(models.DBConnection)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
-
-	err = user.UpdateUser(db)
+	err = env.DB.UpdateUser(user)
 	if err != nil {
 		log.Println(err)
 		return

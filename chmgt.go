@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"chmgt/handling"
 	"chmgt/models"
-	"chmgt/routing"
 )
 
 func main() {
@@ -29,16 +29,16 @@ func main() {
 	// Create the database if it doesn't exist
 	if config.Database != "" {
 		// Overwrite default if config specifies db file
-		models.DBConnection = config.Database
+		models.DSN = config.Database
 	}
-	if err := models.Exists(models.DBConnection); err != nil {
-		log.Printf("Creating database: %v", models.DBConnection)
-		models.GenerateDatabase("./sql/sqlite.sql", models.DBConnection)
+	if err := models.Exists(models.DSN); err != nil {
+		log.Printf("Creating database: %v", models.DSN)
+		models.GenerateDatabase("./sql/sqlite.sql", models.DSN)
 	}
 
 	// Let the user know that we're starting
 	log.Println("Starting server")
-	router := routing.NewRouter()
+	router := handling.NewRouter()
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         fmt.Sprint(config.ServerListen),

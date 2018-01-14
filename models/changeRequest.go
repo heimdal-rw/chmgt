@@ -1,8 +1,6 @@
 package models
 
 import (
-	"database/sql"
-
 	// Bring in the SQLite3 functionality
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -21,7 +19,7 @@ type ChangeRequest struct {
 }
 
 // GetChangeRequests returns all change requests
-func GetChangeRequests(db *sql.DB) ([]ChangeRequest, error) {
+func (db *DB) GetChangeRequests() ([]*ChangeRequest, error) {
 	sqlQuery := `
 	SELECT
 		_rowid_,
@@ -41,9 +39,9 @@ func GetChangeRequests(db *sql.DB) ([]ChangeRequest, error) {
 	}
 	defer rows.Close()
 
-	changeRequests := []ChangeRequest{}
+	crs := make([]*ChangeRequest, 0)
 	for rows.Next() {
-		var cr ChangeRequest
+		cr := new(ChangeRequest)
 		err = rows.Scan(
 			&cr.ID,
 			&cr.Title,
@@ -58,14 +56,14 @@ func GetChangeRequests(db *sql.DB) ([]ChangeRequest, error) {
 		if err != nil {
 			return nil, err
 		}
-		changeRequests = append(changeRequests, cr)
+		crs = append(crs, cr)
 	}
 
-	return changeRequests, nil
+	return crs, nil
 }
 
-// GetChange gets the change request
-func (cr *ChangeRequest) GetChange(db *sql.DB) error {
+// GetChangeRequest gets the change request
+func (db *DB) GetChangeRequest(id int) (*ChangeRequest, error) {
 	sqlQuery := `
 	SELECT
 		title,
@@ -79,12 +77,13 @@ func (cr *ChangeRequest) GetChange(db *sql.DB) error {
 	FROM changeRequest
 	WHERE _rowid_=?
 	`
-	rows, err := db.Query(sqlQuery, cr.ID)
+	rows, err := db.Query(sqlQuery, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rows.Close()
 
+	cr := new(ChangeRequest)
 	for rows.Next() {
 		err = rows.Scan(
 			&cr.Title,
@@ -97,14 +96,14 @@ func (cr *ChangeRequest) GetChange(db *sql.DB) error {
 			&cr.Revert,
 		)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return cr, nil
 }
 
-// CreateChange creates a change request
-func (cr *ChangeRequest) CreateChange(db *sql.DB) error {
+// CreateChangeRequest creates a change request
+func (db *DB) CreateChangeRequest(cr *ChangeRequest) error {
 	sqlQuery := `
 	INSERT INTO changeRequest (
 		title,
@@ -140,11 +139,11 @@ func (cr *ChangeRequest) CreateChange(db *sql.DB) error {
 	return nil
 }
 
-// DeleteChange deletes a change request
-func (cr *ChangeRequest) DeleteChange(db *sql.DB) error {
+// DeleteChangeRequest deletes a change request
+func (db *DB) DeleteChangeRequest(id int) error {
 	sqlQuery := "DELETE FROM changeRequest WHERE _rowid_=?"
 
-	_, err := db.Exec(sqlQuery, cr.ID)
+	_, err := db.Exec(sqlQuery, id)
 	if err != nil {
 		return err
 	}
@@ -152,8 +151,8 @@ func (cr *ChangeRequest) DeleteChange(db *sql.DB) error {
 	return nil
 }
 
-// UpdateChange updates a change request
-func (cr *ChangeRequest) UpdateChange(db *sql.DB) error {
+// UpdateChangeRequest updates a change request
+func (db *DB) UpdateChangeRequest(cr *ChangeRequest) error {
 	sqlQuery := `
 	UPDATE changeRequest SET
 		title=?,
