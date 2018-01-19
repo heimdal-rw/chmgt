@@ -1,6 +1,7 @@
 package handling
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -23,10 +24,12 @@ func (env *Env) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user := new(models.User)
-		user.ID = id
-		err = env.DB.GetUser(id)
+		user, err := env.DB.GetUser(id)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			log.Println(err)
 			return
 		}
