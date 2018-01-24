@@ -16,7 +16,7 @@ type Datastore interface {
 	DeleteChangeRequest(id int) error
 	UpdateChangeRequest(cr *ChangeRequest) error
 	GetUsers() ([]*User, error)
-	GetUser(id int) error
+	GetUser(id int) (*User, error)
 	CreateUser(user *User) error
 	DeleteUser(id int) error
 	UpdateUser(user *User) error

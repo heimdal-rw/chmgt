@@ -51,7 +51,7 @@ func (db *DB) GetUsers() ([]*User, error) {
 }
 
 // GetUser gets the user
-func (db *DB) GetUser(id int) error {
+func (db *DB) GetUser(id int) (*User, error) {
 	sqlQuery := `
 	SELECT
 		_rowid_,
@@ -62,26 +62,19 @@ func (db *DB) GetUser(id int) error {
 	FROM users
 	WHERE _rowid_=?
 	`
-	rows, err := db.Query(sqlQuery, id)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
 	user := new(User)
-	for rows.Next() {
-		err = rows.Scan(
-			&user.ID,
-			&user.Username,
-			&user.Firstname,
-			&user.Lastname,
-			&user.Email,
-		)
-		if err != nil {
-			return err
-		}
+	err := db.QueryRow(sqlQuery, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Firstname,
+		&user.Lastname,
+		&user.Email,
+	)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	return user, nil
 }
 
 // CreateUser creates a user

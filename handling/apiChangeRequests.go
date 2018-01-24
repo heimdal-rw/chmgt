@@ -1,6 +1,7 @@
 package handling
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -22,9 +23,12 @@ func (env *Env) GetChangesHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
-		cr := new(models.ChangeRequest)
-		cr, err = env.DB.GetChangeRequest(id)
+		cr, err := env.DB.GetChangeRequest(id)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			log.Println(err)
 			return
 		}

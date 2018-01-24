@@ -77,28 +77,21 @@ func (db *DB) GetChangeRequest(id int) (*ChangeRequest, error) {
 	FROM changeRequest
 	WHERE _rowid_=?
 	`
-	rows, err := db.Query(sqlQuery, id)
+	cr := new(ChangeRequest)
+	err := db.QueryRow(sqlQuery, id).Scan(
+		&cr.Title,
+		&cr.AuthorID,
+		&cr.RequesterID,
+		&cr.Description,
+		&cr.Reason,
+		&cr.Risk,
+		&cr.Steps,
+		&cr.Revert,
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	cr := new(ChangeRequest)
-	for rows.Next() {
-		err = rows.Scan(
-			&cr.Title,
-			&cr.AuthorID,
-			&cr.RequesterID,
-			&cr.Description,
-			&cr.Reason,
-			&cr.Risk,
-			&cr.Steps,
-			&cr.Revert,
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return cr, nil
 }
 
