@@ -1,11 +1,9 @@
 package handling
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"chmgt/models"
 
@@ -13,34 +11,18 @@ import (
 )
 
 // GetUsersHandler returns users
-func (env *Env) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	users := make([]*models.User, 0)
-	if vars["id"] != "" {
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			log.Println(err)
+	var err error
+	users, err := h.Datasource.GetUsers(vars["id"])
+	if err != nil {
+		if vars["id"] == "" && err == models.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-
-		user, err := env.DB.GetUser(id)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			log.Println(err)
-			return
-		}
-		users = append(users, user)
-	} else {
-		var err error
-		users, err = env.DB.GetUsers()
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		log.Println(err)
+		return
 	}
 
 	jsonOut := json.NewEncoder(w)
@@ -49,16 +31,16 @@ func (env *Env) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateUserHandler creates a new user in the database
-func (env *Env) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := new(models.User)
 
-	err := json.NewDecoder(r.Body).Decode(&user)
+	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	err = env.DB.CreateUser(user)
+	err = h.Datasource.InsertUser(user)
 	if err != nil {
 		log.Println(err)
 		return
@@ -70,16 +52,25 @@ func (env *Env) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteUserHandler deletes the specified change request
-func (env *Env) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	id, err := strconv.Atoi(vars["id"])
+	if vars["id"] == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	users, err := h.Datasource.GetUsers(vars["id"])
 	if err != nil {
+		if err == models.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		log.Println(err)
 		return
 	}
 
-	err = env.DB.DeleteUser(id)
+	err = h.Datasource.RemoveUser(&users[0])
 	if err != nil {
 		log.Println(err)
 		return
@@ -87,24 +78,18 @@ func (env *Env) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateUserHandler updates the specified change request
-func (env *Env) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	user := new(models.User)
 
-	err := json.NewDecoder(r.Body).Decode(&user)
+	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	user.SetID(vars["id"])
 
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	user.ID = id
-
-	err = env.DB.UpdateUser(user)
+	err = h.Datasource.UpdateUser(user)
 	if err != nil {
 		log.Println(err)
 		return
