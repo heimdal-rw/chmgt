@@ -1,0 +1,23 @@
+# listenIP: Specify the IP address on which the server will listen for
+#           incoming requests. The default is all IP addresses.
+#listenIP = "127.0.0.1"
+
+# listenPort: Specify the TCP port on which the server will listen for
+#             incoming requests. The default is port 8080.
+#listenPort = 8080
+
+# useProxyHeaders: Use the value found in the X-Forwarded-For, X-Real-IP,
+#                  X-Forwarded-Proto and RFC7239 Forwarded headers. This
+#                  should only be used when the server is running behind
+#                  an HTTP reverse proxy as it could cause untold security
+#                  issues. The default is "false".
+#useProxyHeaders = false
+
+# databaseHost: Specify the hostname or IP address of the mongodb server
+#databaseHost = "localhost"
+
+# databasePort: Specify the port number that mongodb is listening on
+#databasePort = 27017
+
+# databaseName: Name of the database within mongodb
+#databaseName = "chmgt"

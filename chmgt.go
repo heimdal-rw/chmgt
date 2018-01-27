@@ -1,51 +1,56 @@
 package main
 
 import (
-	"flag"
-	"fmt"
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"chmgt/config"
 	"chmgt/handling"
 	"chmgt/models"
 )
 
 func main() {
-	// Grabbing command line flags
-	var (
-		configFileFlag string //config file to use
-	)
-	flag.StringVar(&configFileFlag, "config", "", "Config file path to be used.")
-	flag.Parse()
-
-	// Pull in config
-	config, err := ReadConfig(configFileFlag)
+	config, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("config:\n%+v\n", config)
-
-	// Create the database if it doesn't exist
-	if config.Database != "" {
-		// Overwrite default if config specifies db file
-		models.DSN = config.Database
+	handler, err := handling.NewHandler(config)
+	if err != nil {
+		log.Fatal(err)
 	}
-	if err := models.Exists(models.DSN); err != nil {
-		log.Printf("Creating database: %v", models.DSN)
-		models.GenerateDatabase("./sql/sqlite.sql", models.DSN)
+	handler.Datasource, err = models.NewDatasource(
+		config.DatabaseConnection(),
+		config.DatabaseName,
+	)
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer handler.Datasource.Close()
 
-	// Let the user know that we're starting
-	log.Println("Starting server")
-	router := handling.NewRouter()
 	srv := &http.Server{
-		Handler:      router,
-		Addr:         fmt.Sprint(config.ServerListen),
+		Handler:      handler.Router,
+		Addr:         config.ListenAddr(),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	// Let the user know where the server is running
+
+	sigChan := make(chan os.Signal, 2)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		log.Println("Recevied shutdown request")
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		handler.Datasource.Close()
+		srv.Shutdown(ctx)
+		os.Exit(0)
+	}()
+
 	log.Printf("Listening on %v\n", srv.Addr)
 	log.Fatal(srv.ListenAndServe())
 }
