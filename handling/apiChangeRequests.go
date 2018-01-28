@@ -39,7 +39,6 @@ func (h *Handler) CreateChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 		log.Println(err)
 		return
 	}
-	log.Printf("JSON:\n%v\n", cr)
 
 	err = h.Datasource.InsertChangeRequest(cr)
 	if err != nil {
