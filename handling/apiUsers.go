@@ -17,7 +17,7 @@ func (h *Handler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	users, err := h.Datasource.GetUsers(vars["id"])
 	if err != nil {
-		if vars["id"] == "" && err == models.ErrNoRows {
+		if vars["id"] == "" || err == models.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
