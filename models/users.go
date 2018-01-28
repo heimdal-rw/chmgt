@@ -6,8 +6,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var ErrNoRows = errors.New("datasource: no records returned")
-
 type User struct {
 	ID        bson.ObjectId `bson:"_id,omitempty" json:"id"`
 	FirstName string        `json:"firstname"`

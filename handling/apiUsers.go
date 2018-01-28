@@ -51,7 +51,7 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	jsonOut.Encode(user.ID)
 }
 
-// DeleteUserHandler deletes the specified change request
+// DeleteUserHandler deletes the specified user
 func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
@@ -77,7 +77,7 @@ func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdateUserHandler updates the specified change request
+// UpdateUserHandler updates the specified user
 func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	user := new(models.User)

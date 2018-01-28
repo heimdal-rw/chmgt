@@ -1,8 +1,12 @@
 package models
 
 import (
+	"errors"
+
 	"gopkg.in/mgo.v2"
 )
+
+var ErrNoRows = errors.New("datasource: no records returned")
 
 type Datasource struct {
 	Session      *mgo.Session
