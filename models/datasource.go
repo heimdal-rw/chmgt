@@ -16,12 +16,12 @@ type Datasource struct {
 
 func NewDatasource(dsn, dbname string) (*Datasource, error) {
 	datasource := new(Datasource)
+	datasource.DatabaseName = dbname
+	datasource.DSN = dsn
+
 	if err := datasource.Connect(); err != nil {
 		return nil, err
 	}
-
-	datasource.DatabaseName = dbname
-	datasource.DSN = dsn
 
 	return datasource, nil
 }
