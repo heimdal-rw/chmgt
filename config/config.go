@@ -42,7 +42,7 @@ func ReadConfig(configFile string) (*Config, error) {
 		configFiles = []string{
 			"./config.toml",
 			fmt.Sprintf("%s/.chmgt/config.toml", usr.HomeDir),
-			"/etc/chmgt/config.coml",
+			"/etc/chmgt/config.toml",
 		}
 	}
 
