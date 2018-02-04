@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"chmgt/models"
+	"github.com/heimdal-rw/chmgt/models"
 
 	"github.com/gorilla/mux"
 )
