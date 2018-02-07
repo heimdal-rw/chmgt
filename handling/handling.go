@@ -3,8 +3,8 @@ package handling
 import (
 	"net/http"
 
-	"chmgt/config"
-	"chmgt/models"
+	"github.com/heimdal-rw/chmgt/config"
+	"github.com/heimdal-rw/chmgt/models"
 
 	"github.com/gorilla/handlers"
 

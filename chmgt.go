@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"chmgt/config"
-	"chmgt/handling"
-	"chmgt/models"
+	"github.com/heimdal-rw/chmgt/config"
+	"github.com/heimdal-rw/chmgt/handling"
+	"github.com/heimdal-rw/chmgt/models"
 )
 
 func main() {
