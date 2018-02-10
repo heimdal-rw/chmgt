@@ -7,6 +7,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var CollectionChangeRequests = "ChangeRequests"
+
 type ChangeRequest struct {
 	ID          bson.ObjectId          `bson:"_id,omitempty" json:"id"`
 	Title       string                 `json:"title"`
@@ -39,7 +41,7 @@ func (cr *ChangeRequest) UnmarshalJSON(p []byte) error {
 }
 
 func (d *Datasource) GetChangeRequests(id string) ([]ChangeRequest, error) {
-	c := d.Session.DB(d.DatabaseName).C("ChangeRequests")
+	c := d.Session.DB(d.DatabaseName).C(CollectionChangeRequests)
 	var (
 		crs []ChangeRequest
 		err error
@@ -65,7 +67,7 @@ func (d *Datasource) GetChangeRequests(id string) ([]ChangeRequest, error) {
 }
 
 func (d *Datasource) InsertChangeRequest(cr *ChangeRequest) error {
-	c := d.Session.DB(d.DatabaseName).C("ChangeRequests")
+	c := d.Session.DB(d.DatabaseName).C(CollectionChangeRequests)
 	info, err := c.Upsert(new(ChangeRequest), cr)
 	if err != nil {
 		return err
@@ -79,11 +81,11 @@ func (d *Datasource) InsertChangeRequest(cr *ChangeRequest) error {
 }
 
 func (d *Datasource) RemoveChangeRequest(cr *ChangeRequest) error {
-	c := d.Session.DB(d.DatabaseName).C("ChangeRequests")
+	c := d.Session.DB(d.DatabaseName).C(CollectionChangeRequests)
 	return c.RemoveId(cr.ID)
 }
 
 func (d *Datasource) UpdateChangeRequest(cr *ChangeRequest) error {
-	c := d.Session.DB(d.DatabaseName).C("ChangeRequests")
+	c := d.Session.DB(d.DatabaseName).C(CollectionChangeRequests)
 	return c.UpdateId(cr.ID, cr)
 }
