@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/heimdal-rw/chmgt/models"
 
@@ -42,6 +43,10 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.Datasource.InsertUser(user)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "E11000") {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("duplicate username"))
+		}
 		log.Println(err)
 		return
 	}

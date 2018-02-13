@@ -23,6 +23,18 @@ func NewDatasource(dsn, dbname string) (*Datasource, error) {
 		return nil, err
 	}
 
+	userIdx := mgo.Index{
+		Key:        []string{"username"},
+		Unique:     true,
+		DropDups:   false,
+		Background: false,
+		Sparse:     false,
+	}
+	err := datasource.Session.DB(dbname).C(CollectionUsers).EnsureIndex(userIdx)
+	if err != nil {
+		return nil, err
+	}
+
 	return datasource, nil
 }
 

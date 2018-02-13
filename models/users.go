@@ -7,6 +7,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var CollectionUsers = "Users"
+
 type User struct {
 	ID        bson.ObjectId          `bson:"_id,omitempty" json:"id"`
 	FirstName string                 `json:"firstname"`
@@ -42,7 +44,7 @@ func (u *User) UnmarshalJSON(p []byte) error {
 }
 
 func (d *Datasource) GetUsers(id string) ([]User, error) {
-	c := d.Session.DB(d.DatabaseName).C("Users")
+	c := d.Session.DB(d.DatabaseName).C(CollectionUsers)
 	var (
 		users []User
 		err   error
@@ -68,7 +70,7 @@ func (d *Datasource) GetUsers(id string) ([]User, error) {
 }
 
 func (d *Datasource) InsertUser(user *User) error {
-	c := d.Session.DB(d.DatabaseName).C("Users")
+	c := d.Session.DB(d.DatabaseName).C(CollectionUsers)
 	info, err := c.Upsert(new(User), user)
 	if err != nil {
 		return err
@@ -82,11 +84,11 @@ func (d *Datasource) InsertUser(user *User) error {
 }
 
 func (d *Datasource) RemoveUser(user *User) error {
-	c := d.Session.DB(d.DatabaseName).C("Users")
+	c := d.Session.DB(d.DatabaseName).C(CollectionUsers)
 	return c.RemoveId(user.ID)
 }
 
 func (d *Datasource) UpdateUser(user *User) error {
-	c := d.Session.DB(d.DatabaseName).C("Users")
+	c := d.Session.DB(d.DatabaseName).C(CollectionUsers)
 	return c.UpdateId(user.ID, user)
 }
