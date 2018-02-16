@@ -8,14 +8,18 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// ErrNoRows is the error to return when no records were found
 var ErrNoRows = errors.New("datasource: no records returned")
 
+// Item encompases objects saved in the database
 type Item map[string]interface{}
 
+// SetID turns a string into a valid MongoDB ID and sets it on the object
 func (i Item) SetID(id string) {
 	i["_id"] = bson.ObjectIdHex(id)
 }
 
+// MarshalJSON returns a json formatted string from the Item object
 func (i *Item) MarshalJSON() ([]byte, error) {
 	var j interface{}
 	data, err := bson.Marshal(i)
@@ -26,6 +30,7 @@ func (i *Item) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&j)
 }
 
+// UnmarshalJSON returns an Item object from a json formatted string
 func (i *Item) UnmarshalJSON(p []byte) error {
 	var j map[string]interface{}
 	json.Unmarshal(p, &j)
@@ -36,12 +41,15 @@ func (i *Item) UnmarshalJSON(p []byte) error {
 	return bson.Unmarshal(data, i)
 }
 
+// Datasource is an object containing the database info and connection
 type Datasource struct {
 	Session      *mgo.Session
 	DatabaseName string
 	DSN          string
 }
 
+// NewDatasource builds and connects to a database instance, then returns
+// a Datasource object
 func NewDatasource(dsn, dbname string) (*Datasource, error) {
 	datasource := new(Datasource)
 	datasource.DatabaseName = dbname
@@ -66,6 +74,7 @@ func NewDatasource(dsn, dbname string) (*Datasource, error) {
 	return datasource, nil
 }
 
+// Connect creates a connection to the database
 func (d *Datasource) Connect() error {
 	var err error
 	d.Session, err = mgo.Dial(d.DSN)
@@ -76,10 +85,12 @@ func (d *Datasource) Connect() error {
 	return nil
 }
 
+// Close terminates a connection to the database
 func (d *Datasource) Close() {
 	d.Session.Close()
 }
 
+// GetItems queries the database for specified items
 func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 	c := d.Session.DB(d.DatabaseName).C(collection)
 	var (
@@ -106,6 +117,7 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 	return items, err
 }
 
+// InsertItem inserts an object into the database
 func (d *Datasource) InsertItem(item Item, collection string) error {
 	c := d.Session.DB(d.DatabaseName).C(collection)
 	item["_id"] = bson.NewObjectId()
@@ -116,11 +128,13 @@ func (d *Datasource) InsertItem(item Item, collection string) error {
 	return nil
 }
 
+// RemoveItem removes the specified object from the database
 func (d *Datasource) RemoveItem(user Item, collection string) error {
 	c := d.Session.DB(d.DatabaseName).C(collection)
 	return c.RemoveId(user["_id"])
 }
 
+// UpdateItem updates the specified object in the database
 func (d *Datasource) UpdateItem(user Item, collection string) error {
 	c := d.Session.DB(d.DatabaseName).C(collection)
 	return c.UpdateId(user["_id"], user)
