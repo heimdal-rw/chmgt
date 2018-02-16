@@ -33,11 +33,17 @@ func (h *Handler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 // CreateUserHandler creates a new user in the database
 func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	user := new(models.User)
+	var user models.Item
 
-	err := json.NewDecoder(r.Body).Decode(user)
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		log.Println(err)
+		log.Println("create user json decode error:", err)
+		return
+	}
+
+	if user["username"] == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("username not specified"))
 		return
 	}
 
@@ -47,13 +53,13 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("duplicate username"))
 		}
-		log.Println(err)
+		log.Println("create user mongo insert error:", err)
 		return
 	}
 
 	jsonOut := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonOut.Encode(user.ID)
+	jsonOut.Encode(user["_id"])
 }
 
 // DeleteUserHandler deletes the specified user
@@ -75,7 +81,7 @@ func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Datasource.RemoveUser(&users[0])
+	err = h.Datasource.RemoveUser(users[0])
 	if err != nil {
 		log.Println(err)
 		return
@@ -85,14 +91,29 @@ func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 // UpdateUserHandler updates the specified user
 func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	user := new(models.User)
+	var user models.Item
 
-	err := json.NewDecoder(r.Body).Decode(user)
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	user.SetID(vars["id"])
+
+	// Username wasn't included in the update, but we MUST
+	// have a username, so get it from the DB
+	if user["username"] == nil {
+		u, err := h.Datasource.GetUsers(vars["id"])
+		if err != nil {
+			if err == models.ErrNoRows {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			log.Println(err)
+			return
+		}
+		user["username"] = u[0]["username"]
+	}
 
 	err = h.Datasource.UpdateUser(user)
 	if err != nil {

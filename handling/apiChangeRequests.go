@@ -15,7 +15,7 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 	vars := mux.Vars(r)
 
 	var err error
-	users, err := h.Datasource.GetChangeRequests(vars["id"])
+	crs, err := h.Datasource.GetChangeRequests(vars["id"])
 	if err != nil {
 		if vars["id"] == "" || err == models.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
@@ -27,14 +27,14 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 
 	jsonOut := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonOut.Encode(users)
+	jsonOut.Encode(crs)
 }
 
 // CreateChangeRequestHandler creates a new change request in the database
 func (h *Handler) CreateChangeRequestHandler(w http.ResponseWriter, r *http.Request) {
-	cr := new(models.ChangeRequest)
+	var cr models.Item
 
-	err := json.NewDecoder(r.Body).Decode(cr)
+	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
 		log.Println(err)
 		return
@@ -48,7 +48,7 @@ func (h *Handler) CreateChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 
 	jsonOut := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonOut.Encode(cr.ID)
+	jsonOut.Encode(cr["_id"])
 }
 
 // DeleteChangeRequestHandler deletes the specified change request
@@ -70,7 +70,7 @@ func (h *Handler) DeleteChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.Datasource.RemoveChangeRequest(&crs[0])
+	err = h.Datasource.RemoveChangeRequest(crs[0])
 	if err != nil {
 		log.Println(err)
 		return
@@ -80,9 +80,9 @@ func (h *Handler) DeleteChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 // UpdateUserHandler updates the specified change request
 func (h *Handler) UpdateChangeRequestHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	cr := new(models.ChangeRequest)
+	var cr models.Item
 
-	err := json.NewDecoder(r.Body).Decode(cr)
+	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
 		log.Println(err)
 		return
