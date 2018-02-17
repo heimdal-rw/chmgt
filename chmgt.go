@@ -25,7 +25,7 @@ func main() {
 	}
 	handler.Datasource, err = models.NewDatasource(
 		config.DatabaseConnection(),
-		config.DatabaseName,
+		config.Database.Name,
 	)
 	if err != nil {
 		log.Fatal(err)

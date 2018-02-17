@@ -9,7 +9,7 @@ import (
 
 // SetConfig makes sure all configuration settings are applied
 func (h *Handler) SetConfig(next http.Handler) http.Handler {
-	if h.Config.UseProxyHeaders {
+	if h.Config.Server.UseProxyHeaders {
 		next = handlers.ProxyHeaders(next)
 	}
 	return next
