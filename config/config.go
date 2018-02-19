@@ -11,15 +11,24 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Config binds together configuration items
-type Config struct {
-	ConfigFile      string
+type serverConfig struct {
 	ListenIP        string `toml:"listenIP"`
 	ListenPort      int    `toml:"listenPort"`
 	UseProxyHeaders bool   `toml:"useProxyHeaders"`
-	DatabaseHost    string `toml:"databaseHost"`
-	DatabasePort    int    `toml:"databasePort"`
-	DatabaseName    string `toml:"databaseName"`
+	SessionSecret   string `toml:"sessionSecret"`
+}
+
+type databaseConfig struct {
+	Host string `toml:"host"`
+	Port int    `toml:"port"`
+	Name string `toml:"name"`
+}
+
+// Config binds together configuration items
+type Config struct {
+	ConfigFile string
+	Server     serverConfig
+	Database   databaseConfig
 }
 
 // ReadConfig reads the configuration from a file and sets
@@ -58,17 +67,20 @@ func ReadConfig(configFile string) (*Config, error) {
 			}
 		} else {
 			// Setup any default values here
-			if config.ListenPort == 0 {
-				config.ListenPort = 8080
+			if config.Server.ListenPort == 0 {
+				config.Server.ListenPort = 8080
 			}
-			if config.DatabaseHost == "" {
-				config.DatabaseHost = "localhost"
+			if config.Database.Host == "" {
+				config.Database.Host = "localhost"
 			}
-			if config.DatabasePort == 0 {
-				config.DatabasePort = 27017
+			if config.Database.Port == 0 {
+				config.Database.Port = 27017
 			}
-			if config.DatabaseName == "" {
-				config.DatabaseName = "chmgt"
+			if config.Database.Name == "" {
+				config.Database.Name = "chmgt"
+			}
+			if config.Server.SessionSecret == "" {
+				config.Server.SessionSecret = "not_so_secret"
 			}
 			return config, nil
 		}
@@ -88,11 +100,11 @@ func NewConfig() (*Config, error) {
 
 // ListenAddr produces a string containing the IP and port
 func (c *Config) ListenAddr() string {
-	return fmt.Sprintf("%s:%d", c.ListenIP, c.ListenPort)
+	return fmt.Sprintf("%s:%d", c.Server.ListenIP, c.Server.ListenPort)
 }
 
 // DatabaseConnection produces a string containing the
 // database host and port
 func (c *Config) DatabaseConnection() string {
-	return fmt.Sprintf("%s:%d", c.DatabaseHost, c.DatabasePort)
+	return fmt.Sprintf("%s:%d", c.Database.Host, c.Database.Port)
 }
