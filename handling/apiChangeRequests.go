@@ -77,7 +77,7 @@ func (h *Handler) DeleteChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// UpdateUserHandler updates the specified change request
+// UpdateChangeRequestHandler updates the specified change request
 func (h *Handler) UpdateChangeRequestHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var cr models.Item
