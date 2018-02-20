@@ -114,6 +114,10 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 		return nil, err
 	}
 
+	// Remove the password from the items if it exists
+	for _, item := range items {
+		delete(item, "password")
+	}
 	return items, err
 }
 

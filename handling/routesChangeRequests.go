@@ -6,7 +6,12 @@ import (
 )
 
 func addChangeRequestRoutes(router *mux.Router, handler *Handler) {
-	commonHandlers := alice.New(handler.SetConfig, handler.SetLogging)
+	commonHandlers := alice.New(
+		handler.CheckAuthentication,
+		handler.SetConfig,
+		handler.SetLogging,
+	)
+
 	router.
 		Methods("GET").
 		Path("/api/changeRequests/{id}").
