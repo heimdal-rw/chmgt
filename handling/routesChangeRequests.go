@@ -6,43 +6,29 @@ import (
 )
 
 func addChangeRequestRoutes(router *mux.Router, handler *Handler) {
+	commonHandlers := alice.New(handler.SetConfig, handler.SetLogging)
 	router.
 		Methods("GET").
 		Path("/api/changeRequests/{id}").
-		Handler(alice.New(
-			handler.SetConfig,
-			handler.SetLogging,
-		).ThenFunc(handler.GetChangeRequestsHandler))
+		Handler(commonHandlers.ThenFunc(handler.GetChangeRequestsHandler))
 
 	router.
 		Methods("GET").
 		Path("/api/changeRequests").
-		Handler(alice.New(
-			handler.SetConfig,
-			handler.SetLogging,
-		).ThenFunc(handler.GetChangeRequestsHandler))
+		Handler(commonHandlers.ThenFunc(handler.GetChangeRequestsHandler))
 
 	router.
 		Methods("POST").
 		Path("/api/changeRequests").
-		Handler(alice.New(
-			handler.SetConfig,
-			handler.SetLogging,
-		).ThenFunc(handler.CreateChangeRequestHandler))
+		Handler(commonHandlers.ThenFunc(handler.CreateChangeRequestHandler))
 
 	router.
 		Methods("DELETE").
 		Path("/api/changeRequests/{id}").
-		Handler(alice.New(
-			handler.SetConfig,
-			handler.SetLogging,
-		).ThenFunc(handler.DeleteChangeRequestHandler))
+		Handler(commonHandlers.ThenFunc(handler.DeleteChangeRequestHandler))
 
 	router.
 		Methods("PUT").
 		Path("/api/changeRequests/{id}").
-		Handler(alice.New(
-			handler.SetConfig,
-			handler.SetLogging,
-		).ThenFunc(handler.UpdateChangeRequestHandler))
+		Handler(commonHandlers.ThenFunc(handler.UpdateChangeRequestHandler))
 }
