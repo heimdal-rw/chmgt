@@ -17,6 +17,9 @@
 # sessionSecret: Specify the secret to be used for authentication tokens
 #sessionSecret = "not_so_secret"
 
+# sessionTimeout: Specify the timeout for sessions in minutes
+#sessionTimeout = 30
+
 [Database]
 # host: Specify the hostname or IP address of the mongodb server
 #host = "localhost"

@@ -29,14 +29,21 @@ func NewHandler(config *config.Config) (*Handler, error) {
 	addUserRoutes(router, handler)
 	addChangeRequestRoutes(router, handler)
 
+	commonHandlers := alice.New(
+		handler.SetConfig,
+		handler.SetLogging,
+	)
+
+	router.
+		Methods("POST").
+		Path("/api/authenticate").
+		Handler(commonHandlers.ThenFunc(handler.AuthenticateHandler))
+
 	// This is a "catch-all" that serves static files and logs
 	// any 404s from bad requests
 	router.
 		PathPrefix("/").
-		Handler(alice.New(
-			handler.SetConfig,
-			handler.SetLogging,
-		).Then(
+		Handler(commonHandlers.Then(
 			http.StripPrefix("/", http.FileServer(http.Dir("static"))),
 		))
 

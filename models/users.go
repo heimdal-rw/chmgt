@@ -1,5 +1,7 @@
 package models
 
+import "gopkg.in/mgo.v2/bson"
+
 // CollectionUsers is the name of the collection for users
 var CollectionUsers = "Users"
 
@@ -21,4 +23,22 @@ func (d *Datasource) RemoveUser(user Item) error {
 // UpdateUser is a wrapper to update a user
 func (d *Datasource) UpdateUser(user Item) error {
 	return d.UpdateItem(user, CollectionUsers)
+}
+
+// ValidateUser checks the user credentials in the database
+func (d *Datasource) ValidateUser(username, password string) (bool, error) {
+	c := d.Session.DB(d.DatabaseName).C(CollectionUsers)
+	query := bson.M{
+		"username": username,
+		"password": password,
+	}
+	num, err := c.Find(query).Count()
+	if err != nil {
+		return false, err
+	}
+	// Since usernames are unique, there should be only one record
+	if num != 1 {
+		return false, nil
+	}
+	return true, nil
 }
