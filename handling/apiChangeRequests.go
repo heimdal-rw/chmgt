@@ -19,15 +19,33 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		if vars["id"] == "" || err == models.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(APIResponseJSON{
+				true,
+				"no change request found",
+				nil,
+			})
 			return
 		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(APIResponseJSON{
+			true,
+			"unexpected error occurred",
+			nil,
+		})
 		log.Println(err)
 		return
 	}
 
-	jsonOut := json.NewEncoder(w)
+	if crs == nil {
+		crs = make([]models.Item, 0)
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonOut.Encode(crs)
+	json.NewEncoder(w).Encode(APIResponseJSON{
+		false,
+		"success",
+		crs,
+	})
 }
 
 // CreateChangeRequestHandler creates a new change request in the database
