@@ -20,7 +20,7 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 		if vars["id"] == "" || err == models.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(APIResponseJSON{
-				true,
+				false,
 				"no change request found",
 				nil,
 			})
@@ -28,7 +28,7 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(APIResponseJSON{
-			true,
+			false,
 			"unexpected error occurred",
 			nil,
 		})
@@ -42,7 +42,7 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(APIResponseJSON{
-		false,
+		true,
 		"success",
 		crs,
 	})
