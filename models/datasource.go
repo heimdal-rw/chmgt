@@ -98,6 +98,9 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 		err   error
 	)
 	if id != "" {
+		if !bson.IsObjectIdHex(id) {
+			return nil, errors.New("invalid object id")
+		}
 		query := c.FindId(bson.ObjectIdHex(id))
 		num, err := query.Count()
 		if err != nil {
@@ -112,6 +115,10 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	if items == nil {
+		items = make([]Item, 0)
 	}
 
 	return items, err
