@@ -19,16 +19,15 @@ func (h *Handler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	users, err := h.Datasource.GetUsers(vars["id"])
 	if err != nil {
 		if vars["id"] == "" || err == models.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
+			APIWriteFailure(w, "no user found", http.StatusNotFound)
 			return
 		}
+		APIWriteFailure(w, "", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 
-	jsonOut := json.NewEncoder(w)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonOut.Encode(users)
+	APIWriteSuccess(w, users)
 }
 
 // CreateUserHandler creates a new user in the database
@@ -37,29 +36,27 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		log.Println("create user json decode error:", err)
+		APIWriteFailure(w, "error parsing json", http.StatusBadRequest)
 		return
 	}
 
 	if user["username"] == nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("username not specified"))
+		APIWriteFailure(w, "username not specified", http.StatusBadRequest)
 		return
 	}
 
 	err = h.Datasource.InsertUser(user)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "E11000") {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("duplicate username"))
+			APIWriteFailure(w, "duplicate username", http.StatusBadRequest)
+			return
 		}
-		log.Println("create user mongo insert error:", err)
+		APIWriteFailure(w, "error inserting change request", http.StatusInternalServerError)
+		log.Println(err)
 		return
 	}
 
-	jsonOut := json.NewEncoder(w)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonOut.Encode(user["_id"])
+	APIWriteSuccess(w, user["_id"])
 }
 
 // DeleteUserHandler deletes the specified user
@@ -67,25 +64,29 @@ func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	if vars["id"] == "" {
-		w.WriteHeader(http.StatusBadRequest)
+		APIWriteFailure(w, "no id specified", http.StatusBadRequest)
 		return
 	}
 
 	users, err := h.Datasource.GetUsers(vars["id"])
 	if err != nil {
 		if err == models.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
+			APIWriteFailure(w, "specified record was not found", http.StatusNotFound)
 			return
 		}
+		APIWriteFailure(w, "error finding user", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 
 	err = h.Datasource.RemoveUser(users[0])
 	if err != nil {
+		APIWriteFailure(w, "error deleting user", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
+
+	APIWriteSuccess(w, vars["id"])
 }
 
 // UpdateUserHandler updates the specified user
@@ -95,7 +96,7 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		log.Println(err)
+		APIWriteFailure(w, "error parsing json", http.StatusBadRequest)
 		return
 	}
 	user.SetID(vars["id"])
@@ -106,9 +107,10 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		u, err := h.Datasource.GetUsers(vars["id"])
 		if err != nil {
 			if err == models.ErrNoRows {
-				w.WriteHeader(http.StatusBadRequest)
+				APIWriteFailure(w, "error finding user", http.StatusNotFound)
 				return
 			}
+			APIWriteFailure(w, "", http.StatusInternalServerError)
 			log.Println(err)
 			return
 		}
@@ -117,7 +119,10 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.Datasource.UpdateUser(user)
 	if err != nil {
+		APIWriteFailure(w, "error updating change request", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
+
+	APIWriteSuccess(w, vars["id"])
 }
