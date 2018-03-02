@@ -28,8 +28,7 @@ func (h *Handler) AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
 	if username != "" && password != "" {
 		valid, err := h.Datasource.ValidateUser(username, password)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("error validating username and password"))
+			APIWriteFailure(w, "error validating username and password", http.StatusInternalServerError)
 			return
 		}
 		if valid {
@@ -40,18 +39,18 @@ func (h *Handler) AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
 			token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 			ss, err := token.SignedString([]byte(h.Config.Server.SessionSecret))
 			if err != nil {
+				APIWriteFailure(w, "", http.StatusInternalServerError)
 				log.Println(err)
+				return
 			}
 
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			json.NewEncoder(w).Encode(map[string]string{"token": ss})
+			APIWriteSuccess(w, ss)
 			return
 		}
 	}
 
 	// Authentication failed
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte("invalid username or password"))
+	APIWriteFailure(w, "invalid username or password", http.StatusUnauthorized)
 }
 
 // CheckAuthentication verifies the user is logged in and has a valid token
@@ -84,21 +83,17 @@ func (h *Handler) CheckAuthentication(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("token invalid"))
+			APIWriteFailure(w, "token invalid", http.StatusUnauthorized)
 			return
 		case *jwt.ValidationError:
 			if err.(*jwt.ValidationError).Errors == jwt.ValidationErrorExpired {
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("token expired"))
+				APIWriteFailure(w, "token expired", http.StatusUnauthorized)
 				return
 			}
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("token validation error"))
+			APIWriteFailure(w, "token validation error", http.StatusInternalServerError)
 			return
 		default:
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("token validation error"))
+			APIWriteFailure(w, "token validation error", http.StatusInternalServerError)
 			return
 		}
 	}
