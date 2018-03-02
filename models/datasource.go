@@ -118,6 +118,11 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 	for _, item := range items {
 		delete(item, "password")
 	}
+
+	if items == nil {
+		items = make([]Item, 0)
+	}
+
 	return items, err
 }
 
