@@ -18,34 +18,15 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 	crs, err := h.Datasource.GetChangeRequests(vars["id"])
 	if err != nil {
 		if vars["id"] == "" || err == models.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(APIResponseJSON{
-				false,
-				"no change request found",
-				nil,
-			})
+			APIWriteFailure(w, "no change request found", http.StatusNotFound)
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(APIResponseJSON{
-			false,
-			"unexpected error occurred",
-			nil,
-		})
+		APIWriteFailure(w, "", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 
-	if crs == nil {
-		crs = make([]models.Item, 0)
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	json.NewEncoder(w).Encode(APIResponseJSON{
-		true,
-		"success",
-		crs,
-	})
+	APIWriteSuccess(w, crs)
 }
 
 // CreateChangeRequestHandler creates a new change request in the database
@@ -54,19 +35,17 @@ func (h *Handler) CreateChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 
 	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
-		log.Println(err)
+		APIWriteFailure(w, "error parsing json", http.StatusBadRequest)
 		return
 	}
 
 	err = h.Datasource.InsertChangeRequest(cr)
 	if err != nil {
-		log.Println(err)
+		APIWriteFailure(w, "error inserting change request", http.StatusInternalServerError)
 		return
 	}
 
-	jsonOut := json.NewEncoder(w)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonOut.Encode(cr["_id"])
+	APIWriteSuccess(w, cr["_id"])
 }
 
 // DeleteChangeRequestHandler deletes the specified change request
@@ -74,25 +53,29 @@ func (h *Handler) DeleteChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 	vars := mux.Vars(r)
 
 	if vars["id"] == "" {
-		w.WriteHeader(http.StatusBadRequest)
+		APIWriteFailure(w, "no id specified", http.StatusBadRequest)
 		return
 	}
 
 	crs, err := h.Datasource.GetChangeRequests(vars["id"])
 	if err != nil {
 		if err == models.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
+			APIWriteFailure(w, "specified record was not found", http.StatusNotFound)
 			return
 		}
+		APIWriteFailure(w, "error finding change request", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 
 	err = h.Datasource.RemoveChangeRequest(crs[0])
 	if err != nil {
+		APIWriteFailure(w, "error deleting change request", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
+
+	APIWriteSuccess(w, vars["id"])
 }
 
 // UpdateChangeRequestHandler updates the specified change request
@@ -102,14 +85,17 @@ func (h *Handler) UpdateChangeRequestHandler(w http.ResponseWriter, r *http.Requ
 
 	err := json.NewDecoder(r.Body).Decode(&cr)
 	if err != nil {
-		log.Println(err)
+		APIWriteFailure(w, "error parsing json", http.StatusBadRequest)
 		return
 	}
 	cr.SetID(vars["id"])
 
 	err = h.Datasource.UpdateChangeRequest(cr)
 	if err != nil {
+		APIWriteFailure(w, "error updating change request", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
+
+	APIWriteSuccess(w, vars["id"])
 }

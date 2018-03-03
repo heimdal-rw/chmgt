@@ -16,6 +16,7 @@ type serverConfig struct {
 	ListenPort      int    `toml:"listenPort"`
 	UseProxyHeaders bool   `toml:"useProxyHeaders"`
 	SessionSecret   string `toml:"sessionSecret"`
+	SessionTimeout  int    `toml:"sessionTimeout"`
 }
 
 type databaseConfig struct {
@@ -81,6 +82,9 @@ func ReadConfig(configFile string) (*Config, error) {
 			}
 			if config.Server.SessionSecret == "" {
 				config.Server.SessionSecret = "not_so_secret"
+			}
+			if config.Server.SessionTimeout == 0 {
+				config.Server.SessionTimeout = 30
 			}
 			return config, nil
 		}
