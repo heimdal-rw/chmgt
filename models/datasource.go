@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/heimdal-rw/chmgt/config"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -50,12 +51,19 @@ type Datasource struct {
 
 // NewDatasource builds and connects to a database instance, then returns
 // a Datasource object
-func NewDatasource(dsn, dbname string) (*Datasource, error) {
+func NewDatasource(config *config.Config) (*Datasource, error) {
 	datasource := new(Datasource)
-	datasource.DatabaseName = dbname
-	datasource.DSN = dsn
+	datasource.DatabaseName = config.Database.Name
+	datasource.DSN = config.DatabaseConnection()
 
 	if err := datasource.Connect(); err != nil {
+		return nil, err
+	}
+
+	if err := datasource.Session.DB(config.Database.AuthDB).Login(
+		config.Database.Username,
+		config.Database.Password,
+	); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +74,7 @@ func NewDatasource(dsn, dbname string) (*Datasource, error) {
 		Background: false,
 		Sparse:     false,
 	}
-	err := datasource.Session.DB(dbname).C(CollectionUsers).EnsureIndex(userIdx)
+	err := datasource.Session.DB(datasource.DatabaseName).C(CollectionUsers).EnsureIndex(userIdx)
 	if err != nil {
 		return nil, err
 	}

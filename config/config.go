@@ -20,9 +20,12 @@ type serverConfig struct {
 }
 
 type databaseConfig struct {
-	Host string `toml:"host"`
-	Port int    `toml:"port"`
-	Name string `toml:"name"`
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Name     string `toml:"name"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
+	AuthDB   string `toml:"authDB"`
 }
 
 // Config binds together configuration items
@@ -79,6 +82,15 @@ func ReadConfig(configFile string) (*Config, error) {
 			}
 			if config.Database.Name == "" {
 				config.Database.Name = "chmgt"
+			}
+			if config.Database.AuthDB == "" {
+				config.Database.AuthDB = "admin"
+			}
+			if config.Database.Username == "" {
+				config.Database.Username = "chmgt"
+			}
+			if config.Database.Password == "" {
+				config.Database.Password = "chmgtPass"
 			}
 			if config.Server.SessionSecret == "" {
 				config.Server.SessionSecret = "not_so_secret"
