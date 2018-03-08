@@ -83,6 +83,10 @@ func TestGetSingleUser(t *testing.T) {
 		t.Errorf("Expected the body to only have 1 hit. Got %v", len(body))
 	}
 
+	if val, ok := body[0]["password"]; ok {
+		t.Errorf("Expected no password to be returned. Got %v", val)
+	}
+
 	if body[0]["username"] != "admin" {
 		t.Errorf("Expected the username to be 'admin'. Got %v", body[0]["username"])
 	}
@@ -180,18 +184,15 @@ func getAuthToken(user string, pw string) (string, error) {
 }
 
 func formatResponse(r *httptest.ResponseRecorder) (handling.APIResponseJSON, error) {
+	response := handling.APIResponseJSON{}
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return handling.APIResponseJSON{}, err
-	}
-	response := handling.APIResponseJSON{}
-	jsonErr := json.Unmarshal(body, &response)
-
-	if jsonErr != nil {
-		return handling.APIResponseJSON{}, jsonErr
+		return response, err
 	}
 
-	return response, nil
+	err = json.Unmarshal(body, &response)
+	return response, err
 }
 
 func formatData(i interface{}) []map[string]interface{} {
