@@ -83,9 +83,6 @@ func ReadConfig(configFile string) (*Config, error) {
 			if config.Database.Name == "" {
 				config.Database.Name = "chmgt"
 			}
-			if config.Database.AuthDB == "" {
-				config.Database.AuthDB = "admin"
-			}
 			if config.Database.Username == "" {
 				config.Database.Username = "chmgt"
 			}

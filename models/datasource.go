@@ -60,11 +60,13 @@ func NewDatasource(config *config.Config) (*Datasource, error) {
 		return nil, err
 	}
 
-	if err := datasource.Session.DB(config.Database.AuthDB).Login(
-		config.Database.Username,
-		config.Database.Password,
-	); err != nil {
-		return nil, err
+	if config.Database.AuthDB != "" {
+		if err := datasource.Session.DB(config.Database.AuthDB).Login(
+			config.Database.Username,
+			config.Database.Password,
+		); err != nil {
+			return nil, err
+		}
 	}
 
 	userIdx := mgo.Index{
