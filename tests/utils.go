@@ -23,7 +23,20 @@ type App struct {
 var a App
 
 // executeRequest actually creates a ServeHTTP instance and then executes the request passed to it. Request body optional.
-func executeRequest(method string, path string, authToken string, body io.Reader) *httptest.ResponseRecorder {
+func executeRequest(method string, path string, body io.Reader, user string, pw string) (*httptest.ResponseRecorder, error) {
+
+	authString := fmt.Sprintf(`{"username": "%s", "password": "%s"}`, user, pw)
+	authBytes := []byte(authString)
+	authRequest, _ := http.NewRequest("POST", "/api/authenticate", bytes.NewBuffer(authBytes))
+	authRec := httptest.NewRecorder()
+	a.Router.ServeHTTP(authRec, authRequest)
+
+	resp, err := formatResponse(authRec)
+	if err != nil {
+		return nil, err
+	}
+	authToken := resp.Data.(string)
+
 	req, _ := http.NewRequest(method, path, body)
 	if authToken != "" {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", authToken))
@@ -34,7 +47,7 @@ func executeRequest(method string, path string, authToken string, body io.Reader
 	rr := httptest.NewRecorder()
 	a.Router.ServeHTTP(rr, req)
 
-	return rr
+	return rr, nil
 }
 
 // checkResponseCode checks that the response code is what we expect.
@@ -42,21 +55,6 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	if expected != actual {
 		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
 	}
-}
-
-// getAuthToken authenticates to the API and returns a token to use for the rest of the requests.
-func getAuthToken(user string, pw string) (string, error) {
-
-	authString := fmt.Sprintf(`{"username": "%s", "password": "%s"}`, user, pw)
-	data := []byte(authString)
-	response := executeRequest("POST", "/api/authenticate", "", bytes.NewBuffer(data))
-
-	resp1, err := formatResponse(response)
-	if err != nil {
-		return "", err
-	}
-
-	return resp1.Data.(string), nil
 }
 
 // formatResponse unmarshals the json response into an APIResponseJSON struct

@@ -40,21 +40,17 @@ func TestGetSingleUser(t *testing.T) {
 	clearCollections()
 	insertUsers(a.DB, []string{"admin"})
 
-	token, err := getAuthToken("admin", "password_admin")
+	response, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
 	if err != nil {
-		t.Errorf("Got %s when attempting to auth", err)
+		t.Errorf("Got %s when GETing '/api/users'. Error: ", err)
 	}
-
-	response := executeRequest("GET", "/api/users", token, nil)
-
-	checkResponseCode(t, http.StatusOK, response.Code)
-
 	fmtresp, err := formatResponse(response)
 	if err != nil {
 		t.Errorf("Error in response format. Got %s", err)
 	}
 
 	// Testing the response object for this particular function
+	checkResponseCode(t, http.StatusOK, response.Code)
 	body := formatData(fmtresp.Data)
 	assert.Exactly(t, bool(true), fmtresp.Success, fmt.Sprintf("Expected 'success' object to be true. Got: %v", fmtresp.Success))
 	assert.Exactly(t, string("success"), fmtresp.Message, fmt.Sprintf("Expected response message to be 'success'. Got: %v", fmtresp.Message))
@@ -72,21 +68,17 @@ func TestGetMultipleUsers(t *testing.T) {
 	clearCollections()
 	insertUsers(a.DB, []string{"admin", "tester1", "tester2"})
 
-	token, err := getAuthToken("admin", "password_admin")
+	response, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
 	if err != nil {
-		t.Errorf("Got %s when attempting to auth", err)
+		t.Errorf("Got %s when GETing '/api/users'. Error: ", err)
 	}
-
-	response := executeRequest("GET", "/api/users", token, nil)
-
-	checkResponseCode(t, http.StatusOK, response.Code)
-
 	fmtresp, err := formatResponse(response)
 	if err != nil {
 		t.Errorf("Error in response format. Got %s", err)
 	}
 
 	// Testing the response object for this particular function
+	checkResponseCode(t, http.StatusOK, response.Code)
 	body := formatData(fmtresp.Data)
 	assert.Exactly(t, int(3), len(body), fmt.Sprintf("Expected the body to only 3 hits. Got: %v", len(body)))
 }
