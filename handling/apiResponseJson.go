@@ -12,12 +12,14 @@ type APIResponseJSON struct {
 	Data    interface{} `json:"data"`
 }
 
+// WriteJSON sets the appropriate headers and encodes a JSON string
 func (j APIResponseJSON) WriteJSON(w http.ResponseWriter, status int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(j)
 }
 
+// APIWriteSuccess constructs a response object with success values
 func APIWriteSuccess(w http.ResponseWriter, data interface{}) {
 	APIResponseJSON{
 		true,
@@ -26,6 +28,7 @@ func APIWriteSuccess(w http.ResponseWriter, data interface{}) {
 	}.WriteJSON(w, http.StatusOK)
 }
 
+// APIWriteFailure constructs a response object with failure values
 func APIWriteFailure(w http.ResponseWriter, msg string, status int) {
 	if msg == "" {
 		msg = "unknown error occured"
