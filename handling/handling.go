@@ -30,6 +30,7 @@ func NewHandler(config *config.Config) (*Handler, error) {
 	commonHandlers = alice.New(
 		handler.SetConfig,
 		handler.SetLogging,
+		handler.CheckHeaders,
 	)
 
 	authenticatedHandlers = alice.New(
