@@ -17,6 +17,10 @@ func (h *Handler) GetChangeRequestsHandler(w http.ResponseWriter, r *http.Reques
 	var err error
 	crs, err := h.Datasource.GetChangeRequests(vars["id"])
 	if err != nil {
+		if err.Error() == "invalid object id" {
+			APIWriteFailure(w, "no change request found", http.StatusNotFound)
+			return
+		}
 		if vars["id"] == "" || err == models.ErrNoRows {
 			APIWriteFailure(w, "no change request found", http.StatusNotFound)
 			return
