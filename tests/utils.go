@@ -38,9 +38,7 @@ func executeRequest(method string, path string, body io.Reader, user string, pw 
 	authToken := resp.Data.(string)
 
 	req, _ := http.NewRequest(method, path, body)
-	if authToken != "" {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", authToken))
-	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", authToken))
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
