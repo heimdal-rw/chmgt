@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/heimdal-rw/chmgt/config"
 	"gopkg.in/mgo.v2"
@@ -12,15 +13,25 @@ import (
 // ErrNoRows is the error to return when no records were found
 var ErrNoRows = errors.New("datasource: no records returned")
 
-// ErrObjId is the error to return when an Object ID is invalid
-var ErrObjId = errors.New("invalid object id")
+// ErrObjID is the error to return when an Object ID is invalid
+var ErrObjID = errors.New("invalid object id")
+
+// CollectionChangeRequests is the name of the collection for change requests
+var CollectionChangeRequests = "ChangeRequests"
+
+// CollectionUsers is the name of the collection for users
+var CollectionUsers = "Users"
 
 // Item encompases objects saved in the database
 type Item map[string]interface{}
 
 // SetID turns a string into a valid MongoDB ID and sets it on the object
-func (i Item) SetID(id string) {
+func (i Item) SetID(id string) error {
+	if !bson.IsObjectIdHex(id) {
+		return ErrObjID
+	}
 	i["_id"] = bson.ObjectIdHex(id)
+	return nil
 }
 
 // MarshalJSON returns a json formatted string from the Item object
@@ -103,6 +114,26 @@ func (d *Datasource) Close() {
 	d.Session.Close()
 }
 
+func (d *Datasource) GetPassword(id bson.ObjectId) (string, error) {
+	c := d.Session.DB(d.DatabaseName).C("Users")
+
+	var items []Item
+
+	err := c.FindId(id).All(&items)
+	if err != nil {
+		return "", err
+	}
+
+	if items == nil {
+		return "", ErrNoRows
+	}
+
+	if val, ok := items[0]["password"].(string); ok {
+		return val, nil
+	}
+	return "", nil
+}
+
 // GetItems queries the database for specified items
 func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 	c := d.Session.DB(d.DatabaseName).C(collection)
@@ -112,7 +143,7 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 	)
 	if id != "" {
 		if !bson.IsObjectIdHex(id) {
-			return nil, ErrObjId
+			return nil, ErrObjID
 		}
 		query := c.FindId(bson.ObjectIdHex(id))
 		num, err := query.Count()
@@ -154,13 +185,40 @@ func (d *Datasource) InsertItem(item Item, collection string) error {
 }
 
 // RemoveItem removes the specified object from the database
-func (d *Datasource) RemoveItem(user Item, collection string) error {
+func (d *Datasource) RemoveItem(item Item, collection string) error {
 	c := d.Session.DB(d.DatabaseName).C(collection)
-	return c.RemoveId(user["_id"])
+	return c.RemoveId(item["_id"])
 }
 
 // UpdateItem updates the specified object in the database
-func (d *Datasource) UpdateItem(user Item, collection string) error {
+func (d *Datasource) UpdateItem(item Item, collection string) error {
+	if strings.EqualFold("Users", collection) {
+		if _, ok := item["password"]; !ok {
+			password, err := d.GetPassword(item["_id"].(bson.ObjectId))
+			if err != nil {
+				return err
+			}
+			item["password"] = password
+		}
+	}
 	c := d.Session.DB(d.DatabaseName).C(collection)
-	return c.UpdateId(user["_id"], user)
+	return c.UpdateId(item["_id"], item)
+}
+
+// ValidateUser checks the user credentials in the database
+func (d *Datasource) ValidateUser(username, password string) (bool, error) {
+	c := d.Session.DB(d.DatabaseName).C(CollectionUsers)
+	query := bson.M{
+		"username": username,
+		"password": password,
+	}
+	num, err := c.Find(query).Count()
+	if err != nil {
+		return false, err
+	}
+	// Since usernames are unique, there should be only one record
+	if num != 1 {
+		return false, nil
+	}
+	return true, nil
 }
