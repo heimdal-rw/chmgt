@@ -18,12 +18,15 @@ func (h *Handler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	users, err := h.Datasource.GetUsers(vars["id"])
 	if err != nil {
-		if vars["id"] == "" || err == models.ErrNoRows {
-			APIWriteFailure(w, "no user found", http.StatusNotFound)
-			return
+		switch err {
+		case models.ErrNoRows:
+			APIWriteFailure(w, "no change request found", http.StatusNotFound)
+		case models.ErrObjId:
+			APIWriteFailure(w, "invalid object id", http.StatusBadRequest)
+		default:
+			APIWriteFailure(w, "", http.StatusInternalServerError)
+			log.Println(err)
 		}
-		APIWriteFailure(w, "", http.StatusInternalServerError)
-		log.Println(err)
 		return
 	}
 

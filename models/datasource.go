@@ -12,6 +12,9 @@ import (
 // ErrNoRows is the error to return when no records were found
 var ErrNoRows = errors.New("datasource: no records returned")
 
+// ErrObjId is the error to return when an Object ID is invalid
+var ErrObjId = errors.New("invalid object id")
+
 // Item encompases objects saved in the database
 type Item map[string]interface{}
 
@@ -109,7 +112,7 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 	)
 	if id != "" {
 		if !bson.IsObjectIdHex(id) {
-			return nil, errors.New("invalid object id")
+			return nil, ErrObjId
 		}
 		query := c.FindId(bson.ObjectIdHex(id))
 		num, err := query.Count()
