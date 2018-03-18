@@ -114,6 +114,7 @@ func (d *Datasource) Close() {
 	d.Session.Close()
 }
 
+// GetPassword gets the password for a specific ID
 func (d *Datasource) GetPassword(id bson.ObjectId) (string, error) {
 	c := d.Session.DB(d.DatabaseName).C("Users")
 
