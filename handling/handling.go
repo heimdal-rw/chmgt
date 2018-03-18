@@ -12,6 +12,9 @@ import (
 	"github.com/justinas/alice"
 )
 
+var commonHandlers alice.Chain
+var authenticatedHandlers alice.Chain
+
 // Handler encompases all request handling
 type Handler struct {
 	Router     http.Handler
@@ -24,15 +27,21 @@ func NewHandler(config *config.Config) (*Handler, error) {
 	handler := new(Handler)
 	handler.Config = config
 
+	commonHandlers = alice.New(
+		handler.SetConfig,
+		handler.SetLogging,
+		handler.CheckHeaders,
+	)
+
+	authenticatedHandlers = alice.New(
+		handler.CheckAuthentication,
+	)
+	authenticatedHandlers = authenticatedHandlers.Extend(commonHandlers)
+
 	router := mux.NewRouter()
 
 	addUserRoutes(router, handler)
 	addChangeRequestRoutes(router, handler)
-
-	commonHandlers := alice.New(
-		handler.SetConfig,
-		handler.SetLogging,
-	)
 
 	router.
 		Methods("POST").

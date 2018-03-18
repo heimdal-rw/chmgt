@@ -100,6 +100,25 @@ func (h *Handler) CheckAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+// CheckHeaders checks the incoming request for valid data
+func (h *Handler) CheckHeaders(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" || r.Method == "PUT" {
+			cts := r.Header["Content-Type"]
+			for _, ct := range cts {
+				if strings.ToLower(ct) == "application/json" {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			APIWriteFailure(w, "unsupported Content-Type", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
 // SetConfig makes sure all configuration settings are applied
 func (h *Handler) SetConfig(next http.Handler) http.Handler {
 	if h.Config.Server.UseProxyHeaders {
