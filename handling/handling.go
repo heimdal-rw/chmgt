@@ -40,9 +40,6 @@ func NewHandler(config *config.Config) (*Handler, error) {
 
 	router := mux.NewRouter()
 
-	// addUserRoutes(router, handler)
-	// addChangeRequestRoutes(router, handler)
-
 	router.
 		Methods("POST").
 		Path("/api/authenticate").
