@@ -23,17 +23,19 @@ type App struct {
 var a App
 
 // executeRequest actually creates a ServeHTTP instance and then executes the request passed to it. Request body optional.
-func executeRequest(method string, path string, body io.Reader, user string, pw string) (*httptest.ResponseRecorder, error) {
+func executeRequest(method string, path string, body io.Reader, user string, pw string) (handling.APIResponse, int, error) {
+	ret := handling.APIResponse{}
 
 	authString := fmt.Sprintf(`{"username": "%s", "password": "%s"}`, user, pw)
 	authBytes := []byte(authString)
 	authRequest, _ := http.NewRequest("POST", "/api/authenticate", bytes.NewBuffer(authBytes))
+	authRequest.Header.Set("Content-Type", "application/json")
 	authRec := httptest.NewRecorder()
 	a.Router.ServeHTTP(authRec, authRequest)
 
 	resp, err := formatResponse(authRec)
 	if err != nil {
-		return nil, err
+		return ret, 0, err
 	}
 	authToken := resp.Data.(string)
 
@@ -45,7 +47,12 @@ func executeRequest(method string, path string, body io.Reader, user string, pw 
 	rr := httptest.NewRecorder()
 	a.Router.ServeHTTP(rr, req)
 
-	return rr, nil
+	ret, err = formatResponse(rr)
+	if err != nil {
+		return handling.APIResponse{}, 0, err
+	}
+
+	return ret, rr.Code, nil
 }
 
 // checkResponseCode checks that the response code is what we expect.
@@ -55,9 +62,9 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	}
 }
 
-// formatResponse unmarshals the json response into an APIResponseJSON struct
-func formatResponse(r *httptest.ResponseRecorder) (handling.APIResponseJSON, error) {
-	response := handling.APIResponseJSON{}
+// formatResponse unmarshals the json response into an APIResponse struct
+func formatResponse(r *httptest.ResponseRecorder) (handling.APIResponse, error) {
+	response := handling.APIResponse{}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -69,7 +76,7 @@ func formatResponse(r *httptest.ResponseRecorder) (handling.APIResponseJSON, err
 }
 
 // formatData returns the Data section of the response in a use-able map
-func formatData(i interface{}) []map[string]interface{} {
+func formatGetData(i interface{}) []map[string]interface{} {
 	r := make([]map[string]interface{}, 0)
 	ilist := i.([]interface{})
 	for _, v := range ilist {
@@ -88,7 +95,7 @@ func insertUsers(d *models.Datasource, s []string) {
 			"email":     fmt.Sprintf("%s@example.com", v),
 			"firstname": v,
 			"lastname":  "User"}
-		d.InsertUser(u)
+		d.InsertItem(u, "Users")
 	}
 }
 
