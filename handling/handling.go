@@ -40,13 +40,35 @@ func NewHandler(config *config.Config) (*Handler, error) {
 
 	router := mux.NewRouter()
 
-	addUserRoutes(router, handler)
-	addChangeRequestRoutes(router, handler)
-
 	router.
 		Methods("POST").
 		Path("/api/authenticate").
 		Handler(commonHandlers.ThenFunc(handler.AuthenticateHandler))
+
+	router.
+		Methods("GET").
+		Path("/api/{collection}").
+		Handler(authenticatedHandlers.ThenFunc(handler.GetItemsHandler))
+
+	router.
+		Methods("GET").
+		Path("/api/{collection}/{id}").
+		Handler(authenticatedHandlers.ThenFunc(handler.GetItemsHandler))
+
+	router.
+		Methods("POST").
+		Path("/api/{collection}").
+		Handler(authenticatedHandlers.ThenFunc(handler.CreateItemHandler))
+
+	router.
+		Methods("DELETE").
+		Path("/api/{collection}/{id}").
+		Handler(authenticatedHandlers.ThenFunc(handler.DeleteItemHandler))
+
+	router.
+		Methods("PUT").
+		Path("/api/{collection}/{id}").
+		Handler(authenticatedHandlers.ThenFunc(handler.UpdateItemHandler))
 
 	// This is a "catch-all" that serves static files and logs
 	// any 404s from bad requests
