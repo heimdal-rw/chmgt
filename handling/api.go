@@ -64,7 +64,7 @@ func getVars(r *http.Request) (map[string]string, error) {
 func (h *Handler) GetItemsHandler(w http.ResponseWriter, r *http.Request) {
 	vars, err := getVars(r)
 	if err != nil {
-		APIWriteFailure(w, "invalid collection specified", http.StatusBadRequest)
+		APIWriteFailure(w, "invalid path specified", http.StatusBadRequest)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *Handler) CreateItemHandler(w http.ResponseWriter, r *http.Request) {
 	var item models.Item
 	vars, err := getVars(r)
 	if err != nil {
-		APIWriteFailure(w, "invalid collection specified", http.StatusBadRequest)
+		APIWriteFailure(w, "invalid path specified", http.StatusBadRequest)
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *Handler) CreateItemHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteItemHandler(w http.ResponseWriter, r *http.Request) {
 	vars, err := getVars(r)
 	if err != nil {
-		APIWriteFailure(w, "invalid collection specified", http.StatusBadRequest)
+		APIWriteFailure(w, "invalid path specified", http.StatusBadRequest)
 		return
 	}
 
