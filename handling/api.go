@@ -46,18 +46,27 @@ func APIWriteFailure(w http.ResponseWriter, msg string, status int) {
 	}.WriteJSON(w, status)
 }
 
-func getVars(r *http.Request) map[string]string {
+func getVars(r *http.Request) (map[string]string, error) {
 	vars := mux.Vars(r)
 
 	// Uppercase the first character
 	vars["collection"] = strings.Title(vars["collection"])
+	for _, vc := range models.ValidCollections {
+		if vars["collection"] == vc {
+			return vars, nil
+		}
+	}
 
-	return vars
+	return nil, models.ErrInvalidCollection
 }
 
 // GetItemsHandler returns all items in a collection
 func (h *Handler) GetItemsHandler(w http.ResponseWriter, r *http.Request) {
-	vars := getVars(r)
+	vars, err := getVars(r)
+	if err != nil {
+		APIWriteFailure(w, "invalid collection specified", http.StatusBadRequest)
+		return
+	}
 
 	items, err := h.Datasource.GetItems(vars["id"], vars["collection"])
 	if err != nil {
@@ -81,9 +90,13 @@ func (h *Handler) GetItemsHandler(w http.ResponseWriter, r *http.Request) {
 // CreateItemHandler creates a new item in the specified collection
 func (h *Handler) CreateItemHandler(w http.ResponseWriter, r *http.Request) {
 	var item models.Item
-	vars := getVars(r)
+	vars, err := getVars(r)
+	if err != nil {
+		APIWriteFailure(w, "invalid collection specified", http.StatusBadRequest)
+		return
+	}
 
-	err := json.NewDecoder(r.Body).Decode(&item)
+	err = json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
 		APIWriteFailure(w, "error parsing json", http.StatusBadRequest)
 		return
@@ -112,7 +125,11 @@ func (h *Handler) CreateItemHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteItemHandler deletes the specified item from the specified collection
 func (h *Handler) DeleteItemHandler(w http.ResponseWriter, r *http.Request) {
-	vars := getVars(r)
+	vars, err := getVars(r)
+	if err != nil {
+		APIWriteFailure(w, "invalid collection specified", http.StatusBadRequest)
+		return
+	}
 
 	if vars["id"] == "" {
 		APIWriteFailure(w, "no id specified", http.StatusBadRequest)
@@ -142,10 +159,14 @@ func (h *Handler) DeleteItemHandler(w http.ResponseWriter, r *http.Request) {
 
 // UpdateItemHandler updates the specified user
 func (h *Handler) UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
-	vars := getVars(r)
 	var item models.Item
+	vars, err := getVars(r)
+	if err != nil {
+		APIWriteFailure(w, "invalid path specified", http.StatusBadRequest)
+		return
+	}
 
-	err := json.NewDecoder(r.Body).Decode(&item)
+	err = json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
 		APIWriteFailure(w, "error parsing json", http.StatusBadRequest)
 		return
