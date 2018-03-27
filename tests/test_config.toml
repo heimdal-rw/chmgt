@@ -30,3 +30,12 @@
 # name: Name of the database within mongodb
 #name = "chmgt"
 name = "chmgt_test"
+
+# authDB: Database to authenticate against
+authDB = "admin"
+
+# username: Database administration username
+#username = "chmgt"
+
+# password: Database administration password
+#password = "chmgtPass"

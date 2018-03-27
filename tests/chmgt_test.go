@@ -1,27 +1,19 @@
-package chmgt_test
+package tests
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/heimdal-rw/chmgt/config"
 	"github.com/heimdal-rw/chmgt/handling"
 	"github.com/heimdal-rw/chmgt/models"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
-
-type App struct {
-	Router http.Handler
-	DB     *models.Datasource
-}
-
-var a App
 
 func TestMain(m *testing.M) {
 	a = App{}
@@ -34,10 +26,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	handler.Datasource, err = models.NewDatasource(
-		conf.DatabaseConnection(),
-		conf.Database.Name,
-	)
+	handler.Datasource, err = models.NewDatasource(conf)
 
 	a.Router = handler.Router
 	a.DB = handler.Datasource
@@ -53,171 +42,161 @@ func TestGetSingleUser(t *testing.T) {
 	clearCollections()
 	insertUsers(a.DB, []string{"admin"})
 
-	token, err := getAuthToken("admin", "password_admin")
+	response, code, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
 	if err != nil {
-		t.Errorf("Got %s when attempting to auth", err)
+		t.Errorf("Got %s when GETing '/api/users'. Error: ", err)
 	}
 
-	req, _ := http.NewRequest("GET", "/api/users", nil)
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
-	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, code)
+	body := formatGetData(response.Data)
+	assert.Exactly(t, bool(true), response.Success, fmt.Sprintf("Expected 'success' object to be true. Got: %v", response.Success))
+	assert.Exactly(t, string("success"), response.Message, fmt.Sprintf("Expected response message to be 'success'. Got: %v", response.Message))
+	assert.Exactly(t, int(1), len(body), fmt.Sprintf("Expected the body to only have 1 hit. Got: %v", len(body)))
+	assert.Exactly(t, nil, body[0]["password"], fmt.Sprintf("Expected no password to be returned. Got %v", body[0]["password"]))
+	assert.Exactly(t, string("admin"), body[0]["username"], fmt.Sprintf("Expected the username to be 'admin'. Got %v", body[0]["username"]))
+	assert.Exactly(t, string("admin@example.com"), body[0]["email"], fmt.Sprintf("Expected the username to be 'admin@example.com'. Got %v", body[0]["email"]))
+	assert.Exactly(t, string("admin"), body[0]["firstname"], fmt.Sprintf("Expected the firstname to be 'Admin'. Got %v", body[0]["firstname"]))
+	assert.Exactly(t, string("User"), body[0]["lastname"], fmt.Sprintf("Expected the lastname to be 'User'. Got %v", body[0]["lastname"]))
+}
 
-	checkResponseCode(t, http.StatusOK, response.Code)
+func TestGetMultipleUsers(t *testing.T) {
+	clearCollections()
+	insertUsers(a.DB, []string{"admin", "tester1", "tester2"})
 
-	fmtresp, err := formatResponse(response)
+	response, code, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
 	if err != nil {
-		t.Errorf("Error in response format. Got %s", err)
+		t.Errorf("Got %s when GETing '/api/users'. Error: ", err)
 	}
 
-	if fmtresp.Success != true {
-		t.Errorf("Expected success to be 'true'. Got %v", fmtresp.Success)
-	}
-
-	if fmtresp.Message != "success" {
-		t.Errorf("Expected message to be 'success'. Got %v", fmtresp.Message)
-	}
-
-	body := formatData(fmtresp.Data)
-
-	if len(body) > 1 {
-		t.Errorf("Expected the body to only have 1 hit. Got %v", len(body))
-	}
-
-	if val, ok := body[0]["password"]; ok {
-		t.Errorf("Expected no password to be returned. Got %v", val)
-	}
-
-	if body[0]["username"] != "admin" {
-		t.Errorf("Expected the username to be 'admin'. Got %v", body[0]["username"])
-	}
-
-	if body[0]["email"] != "admin@example.com" {
-		t.Errorf("Expected the username to be 'admin@example.com'. Got %v", body[0]["email"])
-	}
-
-	if body[0]["firstname"] != "admin" {
-		t.Errorf("Expected the firstname to be 'Admin'. Got %v", body[0]["firstname"])
-	}
-
-	if body[0]["lastname"] != "User" {
-		t.Errorf("Expected the lastname to be 'User'. Got %v", body[0]["firstname"])
-	}
+	checkResponseCode(t, http.StatusOK, code)
+	body := formatGetData(response.Data)
+	assert.Exactly(t, bool(true), response.Success, fmt.Sprintf("Expected 'success' object to be true. Got: %v", response.Success))
+	assert.Exactly(t, string("success"), response.Message, fmt.Sprintf("Expected response message to be 'success'. Got: %v", response.Message))
+	assert.Exactly(t, int(3), len(body), fmt.Sprintf("Expected the body to only 3 hits. Got: %v", len(body)))
+	assert.Exactly(t, nil, body[0]["password"], fmt.Sprintf("Expected no password to be returned. Got %v", body[0]["password"]))
+	assert.Exactly(t, nil, body[1]["password"], fmt.Sprintf("Expected no password to be returned. Got %v", body[1]["password"]))
+	assert.Exactly(t, nil, body[2]["password"], fmt.Sprintf("Expected no password to be returned. Got %v", body[2]["password"]))
+	assert.Exactly(t, string("admin"), body[0]["username"], fmt.Sprintf("Expected the username to be 'admin'. Got %v", body[0]["username"]))
+	assert.Exactly(t, string("tester1"), body[1]["username"], fmt.Sprintf("Expected the username to be 'tester1'. Got %v", body[1]["username"]))
+	assert.Exactly(t, string("tester2"), body[2]["username"], fmt.Sprintf("Expected the username to be 'tester3'. Got %v", body[2]["username"]))
 }
 
-// TODO: Populate tests below
+func TestGetNonExistingUser(t *testing.T) {
+	clearCollections()
+	insertUsers(a.DB, []string{"admin"})
 
-// func TestGetMultipleUsers(t *testing.T) {
+	// Generate a ObjectId to use. This should not match any user since part of it being generated is using the system clock.
+	id := bson.NewObjectId().Hex()
 
-// }
-
-// func TestGetNonExistingUser(t *testing.T) {
-
-// }
-
-// func TestAddUser(t *testing.T) {
-
-// }
-
-// func TestUpdateUser(t *testing.T) {
-
-// }
-
-// func TestDeleteUser(t *testing.T) {
-
-// }
-
-// func TestGetSingleChangeRequest(t *testing.T) {
-
-// }
-
-// func TestGetMultipleChangeRequest(t *testing.T) {
-
-// }
-
-// func TestGetNonExistingChangeRequest(t *testing.T) {
-
-// }
-
-// func TestAddChangeRequest(t *testing.T) {
-
-// }
-
-// func TestUpdateChangeRequest(t *testing.T) {
-
-// }
-
-// func TestDeleteChangeRequest(t *testing.T) {
-
-// }
-
-func executeRequest(req *http.Request) *httptest.ResponseRecorder {
-	rr := httptest.NewRecorder()
-	a.Router.ServeHTTP(rr, req)
-
-	return rr
-}
-
-func checkResponseCode(t *testing.T, expected, actual int) {
-	if expected != actual {
-		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
-	}
-}
-
-func getAuthToken(user string, pw string) (string, error) {
-
-	authString := fmt.Sprintf(`{"username": "%s", "password": "%s"}`, user, pw)
-	data := []byte(authString)
-
-	req, err := http.NewRequest("POST", "/api/authenticate", bytes.NewBuffer(data))
+	_, code, err := executeRequest("GET", fmt.Sprintf("/api/users/%s", id), nil, "admin", "password_admin")
 	if err != nil {
-		return "", err
+		t.Errorf("Got %s when GETing '%s'. Error: ", err, id)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	response := executeRequest(req)
 
-	resp1, err := formatResponse(response)
+	checkResponseCode(t, http.StatusNotFound, code)
+}
+
+func TestAddUser(t *testing.T) {
+	clearCollections()
+	insertUsers(a.DB, []string{"admin"})
+
+	userData := `
+{"username": "harry.potter",
+"firstname": "Harry",
+"lastname": "Potter",
+"email": "hpotter@gmail.com",
+"password": "supersecret"}
+`
+
+	dataBytes := []byte(userData)
+
+	response, code, err := executeRequest("POST", "/api/users", bytes.NewBuffer(dataBytes), "admin", "password_admin")
 	if err != nil {
-		return "", err
+		t.Errorf("Got %s when POSTing '/api/users'. Error: ", err)
 	}
 
-	return resp1.Data.(string), nil
+	checkResponseCode(t, http.StatusOK, code)
+
+	assert.Exactly(t, bool(true), response.Success, fmt.Sprintf("Expected 'success' object to be true. Got: %v", response.Success))
+	assert.Exactly(t, bool(true), bson.IsObjectIdHex(response.Data.(string)), fmt.Sprintf("Expected return data to be ObjectHexID, got: %v", response.Data))
 }
 
-func formatResponse(r *httptest.ResponseRecorder) (handling.APIResponseJSON, error) {
-	response := handling.APIResponseJSON{}
+func TestUpdateUser(t *testing.T) {
+	clearCollections()
+	insertUsers(a.DB, []string{"admin", "hpotter"})
 
-	body, err := ioutil.ReadAll(r.Body)
+	// Figure out the user id
+	var testUser map[string]interface{}
+	response, code, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
 	if err != nil {
-		return response, err
+		t.Errorf("Got %s when GETing '/api/users'. Error: ", err)
+	}
+	checkResponseCode(t, http.StatusOK, code)
+
+	data := formatGetData(response.Data)
+	for _, v := range data {
+		if v["username"] == "hpotter" {
+			testUser = v
+		}
 	}
 
-	err = json.Unmarshal(body, &response)
-	return response, err
-}
+	// Set data to send with PUT
+	updateData := fmt.Sprintf(`
+{"firstname": "Harry",
+"lastname": "Potter",
+"username": "%s",
+"email": "%s"}
+`, testUser["username"], testUser["email"])
+	dataBytes := []byte(updateData)
 
-func formatData(i interface{}) []map[string]interface{} {
-	r := make([]map[string]interface{}, 0)
-	ilist := i.([]interface{})
-	for _, v := range ilist {
-		n := v.(map[string]interface{})
-		r = append(r, n)
+	// Make the PUT update
+	response, code, err = executeRequest("PUT", fmt.Sprintf("/api/users/%s", testUser["_id"]), bytes.NewBuffer(dataBytes), "admin", "password_admin")
+	if err != nil {
+		t.Errorf("Got %s when PUTing '/api/users/%s'. Error: ", err, testUser["_id"])
 	}
-	return r
-}
+	checkResponseCode(t, http.StatusOK, code)
 
-func insertUsers(d *models.Datasource, s []string) {
-	for _, v := range s {
-		u := models.Item{
-			"username":  v,
-			"password":  fmt.Sprintf("password_%s", v),
-			"email":     fmt.Sprintf("%s@example.com", v),
-			"firstname": v,
-			"lastname":  "User"}
-		d.InsertUser(u)
+	// Get the user again to verify changes are in place
+	response, code, err = executeRequest("GET", fmt.Sprintf("/api/users/%s", testUser["_id"]), nil, "admin", "password_admin")
+	if err != nil {
+		t.Errorf("Got %s when GETing '/api/users/%s'. Error: ", err, testUser["_id"])
 	}
+	checkResponseCode(t, http.StatusOK, code)
+	body := formatGetData(response.Data)
+	assert.Exactly(t, bool(true), response.Success, fmt.Sprintf("Expected 'success' object to be true. Got: %v", response.Success))
+	assert.Exactly(t, string("success"), response.Message, fmt.Sprintf("Expected response message to be 'success'. Got: %v", response.Message))
+	assert.Exactly(t, int(1), len(body), fmt.Sprintf("Expected the body to only have 1 hit. Got: %v", len(body)))
+	assert.Exactly(t, nil, body[0]["password"], fmt.Sprintf("Expected no password to be returned. Got %v", body[0]["password"]))
+	assert.Exactly(t, string("hpotter"), body[0]["username"], fmt.Sprintf("Expected the username to be 'hpotter'. Got %v", body[0]["username"]))
+	assert.Exactly(t, string("hpotter@example.com"), body[0]["email"], fmt.Sprintf("Expected the email to be 'hpotter@example.com'. Got %v", body[0]["email"]))
+	assert.Exactly(t, string("Harry"), body[0]["firstname"], fmt.Sprintf("Expected the firstname to be 'Harry'. Got %v", body[0]["firstname"]))
+	assert.Exactly(t, string("Potter"), body[0]["lastname"], fmt.Sprintf("Expected the lastname to be 'Potter'. Got %v", body[0]["lastname"]))
+
 }
 
-func clearCollections() {
-	sess := a.DB.Session
-	sess.DB("chmgt_test").C("Users").RemoveAll(nil)
+func TestDeleteUser(t *testing.T) {
+	clearCollections()
+	insertUsers(a.DB, []string{"admin", "hpotter"})
+
+	// Figure out the user id
+	var testUser map[string]interface{}
+	response, code, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
+	if err != nil {
+		t.Errorf("Got %s when GETing '/api/users'. Error: ", err)
+	}
+	checkResponseCode(t, http.StatusOK, code)
+
+	data := formatGetData(response.Data)
+	for _, v := range data {
+		if v["username"] == "hpotter" {
+			testUser = v
+		}
+	}
+
+	response, code, err = executeRequest("DELETE", fmt.Sprintf("/api/users/%s", testUser["_id"]), nil, "admin", "password_admin")
+	checkResponseCode(t, http.StatusOK, code)
+
+	response, code, err = executeRequest("DELETE", fmt.Sprintf("/api/users/%s", testUser["_id"]), nil, "admin", "password_admin")
+	checkResponseCode(t, http.StatusNotFound, code)
+
 }
