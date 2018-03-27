@@ -121,7 +121,6 @@ func TestAddUser(t *testing.T) {
 	assert.Exactly(t, bool(true), bson.IsObjectIdHex(response.Data.(string)), fmt.Sprintf("Expected return data to be ObjectHexID, got: %v", response.Data))
 }
 
-// // TODO: Populate tests below
 func TestUpdateUser(t *testing.T) {
 	clearCollections()
 	insertUsers(a.DB, []string{"admin", "hpotter"})
