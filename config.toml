@@ -35,7 +35,7 @@
 #name = "chmgt"
 
 # authDB: Database to authenticate against
-#authDB = "admin"
+#authDB = ""
 
 # username: Database administration username
 #username = "chmgt"
