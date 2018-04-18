@@ -101,6 +101,5 @@ func insertUsers(d *models.Datasource, s []string) {
 
 // clearCollections wipes out the mongo collections in our test db.
 func clearCollections() {
-	sess := a.DB.Session
-	sess.DB("chmgt_test").C("Users").RemoveAll(nil)
+	a.DB.Database.C("Users").RemoveAll(nil)
 }
