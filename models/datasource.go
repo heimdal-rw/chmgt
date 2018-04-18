@@ -2,22 +2,12 @@ package models
 
 import (
 	"encoding/json"
-	"errors"
 	"strings"
 
 	"github.com/heimdal-rw/chmgt/config"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
-
-// ErrNoRows is the error to return when no records were found
-var ErrNoRows = errors.New("datasource: no records returned")
-
-// ErrObjID is the error to return when an Object ID is invalid
-var ErrObjID = errors.New("invalid object id")
-
-// ErrInvalidCollection is returned when the collection specified is invalid
-var ErrInvalidCollection = errors.New("invalid collection")
 
 // ValidCollections defines the currently valid collections
 var ValidCollections = []string{"Users", "ChangeRequests"}
@@ -64,7 +54,8 @@ func (i *Item) UnmarshalJSON(p []byte) error {
 
 // Datasource is an object containing the database info and connection
 type Datasource struct {
-	Session      *mgo.Session
+	session      *mgo.Session
+	Database     *mgo.Database
 	DatabaseName string
 	DSN          string
 }
@@ -72,16 +63,20 @@ type Datasource struct {
 // NewDatasource builds and connects to a database instance, then returns
 // a Datasource object
 func NewDatasource(config *config.Config) (*Datasource, error) {
-	datasource := new(Datasource)
-	datasource.DatabaseName = config.Database.Name
-	datasource.DSN = config.DatabaseConnection()
+	d := new(Datasource)
+	d.DatabaseName = config.Database.Name
+	d.DSN = config.DatabaseConnection()
 
-	if err := datasource.Connect(); err != nil {
+	// make initial connection to Mongo
+	var err error
+	d.session, err = mgo.Dial(d.DSN)
+	if err != nil {
 		return nil, err
 	}
 
+	// authenticate to Mongo if configured
 	if config.Database.AuthDB != "" {
-		if err := datasource.Session.DB(config.Database.AuthDB).Login(
+		if err := d.session.DB(config.Database.AuthDB).Login(
 			config.Database.Username,
 			config.Database.Password,
 		); err != nil {
@@ -89,6 +84,10 @@ func NewDatasource(config *config.Config) (*Datasource, error) {
 		}
 	}
 
+	// connect to specific database
+	d.Database = d.session.DB(d.DatabaseName)
+
+	// make sure we have unique usernames
 	userIdx := mgo.Index{
 		Key:        []string{"username"},
 		Unique:     true,
@@ -96,33 +95,35 @@ func NewDatasource(config *config.Config) (*Datasource, error) {
 		Background: false,
 		Sparse:     false,
 	}
-	err := datasource.Session.DB(datasource.DatabaseName).C(CollectionUsers).EnsureIndex(userIdx)
+	err = d.Database.C(CollectionUsers).EnsureIndex(userIdx)
 	if err != nil {
 		return nil, err
 	}
 
-	return datasource, nil
-}
-
-// Connect creates a connection to the database
-func (d *Datasource) Connect() error {
-	var err error
-	d.Session, err = mgo.Dial(d.DSN)
+	// make sure we have unique email addresses
+	emailIdx := mgo.Index{
+		Key:        []string{"email"},
+		Unique:     true,
+		DropDups:   false,
+		Background: false,
+		Sparse:     false,
+	}
+	err = d.Database.C(CollectionUsers).EnsureIndex(emailIdx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return d, nil
 }
 
 // Close terminates a connection to the database
 func (d *Datasource) Close() {
-	d.Session.Close()
+	d.session.Close()
 }
 
 // GetPassword gets the password for a specific ID
 func (d *Datasource) GetPassword(id bson.ObjectId) (string, error) {
-	c := d.Session.DB(d.DatabaseName).C("Users")
+	c := d.Database.C("Users")
 
 	var items []Item
 
@@ -143,7 +144,7 @@ func (d *Datasource) GetPassword(id bson.ObjectId) (string, error) {
 
 // GetItems queries the database for specified items
 func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
-	c := d.Session.DB(d.DatabaseName).C(collection)
+	c := d.Database.C(collection)
 	var (
 		items []Item
 		err   error
@@ -182,7 +183,7 @@ func (d *Datasource) GetItems(id, collection string) ([]Item, error) {
 
 // InsertItem inserts an object into the database
 func (d *Datasource) InsertItem(item Item, collection string) error {
-	c := d.Session.DB(d.DatabaseName).C(collection)
+	c := d.Database.C(collection)
 	item["_id"] = bson.NewObjectId()
 	err := c.Insert(item)
 	if err != nil {
@@ -193,7 +194,7 @@ func (d *Datasource) InsertItem(item Item, collection string) error {
 
 // RemoveItem removes the specified object from the database
 func (d *Datasource) RemoveItem(item Item, collection string) error {
-	c := d.Session.DB(d.DatabaseName).C(collection)
+	c := d.Database.C(collection)
 	return c.RemoveId(item["_id"])
 }
 
@@ -208,13 +209,13 @@ func (d *Datasource) UpdateItem(item Item, collection string) error {
 			item["password"] = password
 		}
 	}
-	c := d.Session.DB(d.DatabaseName).C(collection)
+	c := d.Database.C(collection)
 	return c.UpdateId(item["_id"], item)
 }
 
 // ValidateUser checks the user credentials in the database
 func (d *Datasource) ValidateUser(username, password string) (bool, error) {
-	c := d.Session.DB(d.DatabaseName).C(CollectionUsers)
+	c := d.Database.C(CollectionUsers)
 	query := bson.M{
 		"username": username,
 		"password": password,
