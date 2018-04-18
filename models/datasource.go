@@ -16,6 +16,12 @@ var ErrNoRows = errors.New("datasource: no records returned")
 // ErrObjID is the error to return when an Object ID is invalid
 var ErrObjID = errors.New("invalid object id")
 
+// ErrInvalidCollection is returned when the collection specified is invalid
+var ErrInvalidCollection = errors.New("invalid collection")
+
+// ValidCollections defines the currently valid collections
+var ValidCollections = []string{"Users", "ChangeRequests"}
+
 // CollectionChangeRequests is the name of the collection for change requests
 var CollectionChangeRequests = "ChangeRequests"
 
