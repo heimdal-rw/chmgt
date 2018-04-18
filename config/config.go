@@ -14,6 +14,7 @@ import (
 type serverConfig struct {
 	ListenIP        string `toml:"listenIP"`
 	ListenPort      int    `toml:"listenPort"`
+	LogFile         string `toml:"logFile"`
 	UseProxyHeaders bool   `toml:"useProxyHeaders"`
 	SessionSecret   string `toml:"sessionSecret"`
 	SessionTimeout  int    `toml:"sessionTimeout"`

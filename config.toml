@@ -7,6 +7,10 @@
 #             incoming requests. The default is port 8080.
 #listenPort = 8080
 
+# logFile: Location in which to store log messages. The default log
+#          location is STDOUT and not a file.
+#logFile = ""
+
 # useProxyHeaders: Use the value found in the X-Forwarded-For, X-Real-IP,
 #                  X-Forwarded-Proto and RFC7239 Forwarded headers. This
 #                  should only be used when the server is running behind

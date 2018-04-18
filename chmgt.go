@@ -19,6 +19,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if config.Server.LogFile != "" {
+		logFile, err := os.OpenFile(config.Server.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			log.Fatalf("unable to open log file: %v", err)
+		}
+		defer logFile.Close()
+		log.SetOutput(logFile)
+	}
 	handler, err := handling.NewHandler(config)
 	if err != nil {
 		log.Fatal(err)
