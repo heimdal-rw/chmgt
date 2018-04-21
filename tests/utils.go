@@ -14,13 +14,7 @@ import (
 	"github.com/heimdal-rw/chmgt/models"
 )
 
-// App is the object to build the application routes and datastore configuration
-type App struct {
-	Router http.Handler
-	DB     *models.Datasource
-}
-
-var a App
+var handler *handling.Handler
 
 // executeRequest actually creates a ServeHTTP instance and then executes the request passed to it. Request body optional.
 func executeRequest(method string, path string, body io.Reader, user string, pw string) (handling.APIResponse, int, error) {
@@ -31,7 +25,7 @@ func executeRequest(method string, path string, body io.Reader, user string, pw 
 	authRequest, _ := http.NewRequest("POST", "/api/authenticate", bytes.NewBuffer(authBytes))
 	authRequest.Header.Set("Content-Type", "application/json")
 	authRec := httptest.NewRecorder()
-	a.Router.ServeHTTP(authRec, authRequest)
+	handler.Router.ServeHTTP(authRec, authRequest)
 
 	resp, err := formatResponse(authRec)
 	if err != nil {
@@ -39,13 +33,15 @@ func executeRequest(method string, path string, body io.Reader, user string, pw 
 	}
 	authToken := resp.Data.(string)
 
+	fmt.Println(method, path, body)
 	req, _ := http.NewRequest(method, path, body)
+	fmt.Println(req)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", authToken))
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	rr := httptest.NewRecorder()
-	a.Router.ServeHTTP(rr, req)
+	handler.Router.ServeHTTP(rr, req)
 
 	ret, err = formatResponse(rr)
 	if err != nil {
@@ -89,17 +85,17 @@ func formatGetData(i interface{}) []map[string]interface{} {
 // insertUsers adds some users to the database so we have something to auth with and check for with API calls
 func insertUsers(d *models.Datasource, s []string) {
 	for _, v := range s {
-		u := models.Item{
-			"username":  v,
-			"password":  fmt.Sprintf("password_%s", v),
-			"email":     fmt.Sprintf("%s@example.com", v),
-			"firstname": v,
-			"lastname":  "User"}
-		d.InsertItem(u, "Users")
+		u := models.User{
+			UserName:  v,
+			Password:  fmt.Sprintf("password_%s", v),
+			Email:     fmt.Sprintf("%s@example.com", v),
+			FirstName: v,
+			LastName:  "User"}
+		d.InsertUser(u)
 	}
 }
 
 // clearCollections wipes out the mongo collections in our test db.
 func clearCollections() {
-	a.DB.Database.C("Users").RemoveAll(nil)
+	handler.Datasource.Database.C(models.TBLUSERS).DropCollection()
 }
