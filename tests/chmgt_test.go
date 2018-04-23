@@ -16,20 +16,18 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	a = App{}
-
 	conf, err := config.ReadConfig("test_config.toml")
 	if err != nil {
 		log.Fatal(err)
 	}
-	handler, err := handling.NewHandler(conf)
+	handler, err = handling.NewHandler(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
 	handler.Datasource, err = models.NewDatasource(conf)
-
-	a.Router = handler.Router
-	a.DB = handler.Datasource
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	code := m.Run()
 
@@ -40,7 +38,7 @@ func TestMain(m *testing.M) {
 
 func TestGetSingleUser(t *testing.T) {
 	clearCollections()
-	insertUsers(a.DB, []string{"admin"})
+	insertUsers(handler.Datasource, []string{"admin"})
 
 	response, code, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
 	if err != nil {
@@ -61,7 +59,7 @@ func TestGetSingleUser(t *testing.T) {
 
 func TestGetMultipleUsers(t *testing.T) {
 	clearCollections()
-	insertUsers(a.DB, []string{"admin", "tester1", "tester2"})
+	insertUsers(handler.Datasource, []string{"admin", "tester1", "tester2"})
 
 	response, code, err := executeRequest("GET", "/api/users", nil, "admin", "password_admin")
 	if err != nil {
@@ -83,7 +81,7 @@ func TestGetMultipleUsers(t *testing.T) {
 
 func TestGetNonExistingUser(t *testing.T) {
 	clearCollections()
-	insertUsers(a.DB, []string{"admin"})
+	insertUsers(handler.Datasource, []string{"admin"})
 
 	// Generate a ObjectId to use. This should not match any user since part of it being generated is using the system clock.
 	id := bson.NewObjectId().Hex()
@@ -98,7 +96,7 @@ func TestGetNonExistingUser(t *testing.T) {
 
 func TestAddUser(t *testing.T) {
 	clearCollections()
-	insertUsers(a.DB, []string{"admin"})
+	insertUsers(handler.Datasource, []string{"admin"})
 
 	userData := `
 {"username": "harry.potter",
@@ -123,7 +121,7 @@ func TestAddUser(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	clearCollections()
-	insertUsers(a.DB, []string{"admin", "hpotter"})
+	insertUsers(handler.Datasource, []string{"admin", "hpotter"})
 
 	// Figure out the user id
 	var testUser map[string]interface{}
@@ -176,7 +174,7 @@ func TestUpdateUser(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 	clearCollections()
-	insertUsers(a.DB, []string{"admin", "hpotter"})
+	insertUsers(handler.Datasource, []string{"admin", "hpotter"})
 
 	// Figure out the user id
 	var testUser map[string]interface{}
