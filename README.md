@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/heimdal-rw/chmgt.svg?branch=master)](https://travis-ci.org/heimdal-rw/chmgt)
+
 # chmgt
 Easy change management software for the masses.
 
