@@ -1,0 +1,9 @@
+language: go
+go:
+  - "1.10"
+script: go test ./tests/
+services:
+  - mongodb
+before_script:
+  - sleep 5
+  - mongo admin --eval 'db.createUser({user:"chmgt",pwd:"chmgtPass",roles:["readWrite"]});'
