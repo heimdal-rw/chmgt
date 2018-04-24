@@ -14,13 +14,7 @@ import (
 	"github.com/heimdal-rw/chmgt/models"
 )
 
-// App is the object to build the application routes and datastore configuration
-type App struct {
-	Router http.Handler
-	DB     *models.Datasource
-}
-
-var a App
+var handler *handling.Handler
 
 // executeRequest actually creates a ServeHTTP instance and then executes the request passed to it. Request body optional.
 func executeRequest(method string, path string, body io.Reader, user string, pw string) (handling.APIResponse, int, error) {
@@ -31,7 +25,7 @@ func executeRequest(method string, path string, body io.Reader, user string, pw 
 	authRequest, _ := http.NewRequest("POST", "/api/authenticate", bytes.NewBuffer(authBytes))
 	authRequest.Header.Set("Content-Type", "application/json")
 	authRec := httptest.NewRecorder()
-	a.Router.ServeHTTP(authRec, authRequest)
+	handler.Router.ServeHTTP(authRec, authRequest)
 
 	resp, err := formatResponse(authRec)
 	if err != nil {
@@ -47,7 +41,7 @@ func executeRequest(method string, path string, body io.Reader, user string, pw 
 		req.Header.Set("Content-Type", "application/json")
 	}
 	rr := httptest.NewRecorder()
-	a.Router.ServeHTTP(rr, req)
+	handler.Router.ServeHTTP(rr, req)
 
 	ret, err = formatResponse(rr)
 	if err != nil {
@@ -103,5 +97,5 @@ func insertUsers(d *models.Datasource, s []string) {
 
 // clearCollections wipes out the mongo collections in our test db.
 func clearCollections() {
-	a.DB.Database.C(models.TBLUSERS).RemoveAll(nil)
+	handler.Datasource.Database.C(models.TBLUSERS).RemoveAll(nil)
 }
