@@ -28,13 +28,15 @@ type Change struct {
 	Created            Signature     `bson:"created" json:"created"`
 	Requested          Signature     `bson:"requested" json:"requested"`
 	Scheduled          *time.Time    `bson:"scheduled" json:"scheduled"`
-	ScheduledDateOnly  bool          `bson:"scheduleddateonly" json:"scheduleddateonly"`
+	ScheduledDateOnly  bool          `bson:"scheduleddateonly" json:"scheduledDateOnly"`
 	Assigned           bson.ObjectId `bson:"assigned,omitempty" json:"assigned"`
 	Executed           Signature     `bson:"executed" json:"executed"`
+	Type               string        `bson:"type" json:"type"`
+	Risk               string        `bson:"risk" json:"risk"`
 	Title              string        `bson:"title" json:"title"`
 	Content            string        `bson:"content" json:"content"`
 	Signatures         Signatures    `bson:"signatures" json:"signatures"`
-	OverrideSignatures Signatures    `bson:"overridesignatures" json:"overridesignatures"`
+	OverrideSignatures Signatures    `bson:"overridesignatures" json:"overrideSignatures"`
 }
 
 // GetChanges is a handler to return the specified user objects
